@@ -44,7 +44,7 @@ Generator kredensial offline. Satu file HTML, tanpa dependensi, berjalan sepenuh
 
 Buka `index.html` di browser modern. Tidak perlu instalasi, tidak perlu internet.
 
-Atau akses lewat GitHub Pages: `https://xvnurwzesc.github.io/hijiforge/`
+Atau akses lewat GitHub Pages: https://xvnurwzesc.github.io/hijiforge/
 
 ## Backup
 
@@ -65,5 +65,3 @@ Backup ini tidak meminta passphrase dari pengguna. Kunci enkripsi bersifat tetap
 ## Catatan desain
 
 Aplikasi ini sengaja dibuat sederhana. Tidak banyak peringatan, tidak banyak konfirmasi. Kalau sebuah proses gagal atau tombol tidak merespons, biasanya karena ada input yang tidak sesuai aturan.
-
-## Struktur file
