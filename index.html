@@ -1,0 +1,3928 @@
+<!DOCTYPE html>
+<html lang="en-US" data-hf-tab="fuse" data-hf-source="existing">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HijiForge</title>
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23590915'/><text x='50' y='70' font-size='60' font-family='Arial, sans-serif' font-weight='bold' fill='%23F5E6C8' text-anchor='middle'>H</text></svg>">
+
+  <meta name="description" content="HijiForge - Offline credential generator for usernames, passwords, and fused credentials. All generation happens locally in your browser.">
+  <meta name="theme-color" content="#590915">
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; connect-src 'none'; font-src 'none'; frame-src 'none'; media-src 'none'; worker-src 'none'; manifest-src 'none'">
+
+  <script>
+  (function () {
+    var boot = window.__hijiforgeBoot = { ready: false, errors: [] };
+    window.addEventListener('error', function (e) {
+      boot.errors.push((e.message || 'Unknown error') + (e.lineno ? ' (line ' + e.lineno + ')' : ''));
+    });
+    function report() {
+      if (boot.ready || document.getElementById('boot-error')) return;
+      var box = document.createElement('div');
+      box.id = 'boot-error';
+      box.setAttribute('role', 'alert');
+      box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2000;padding:14px 16px;background:#7f1d1d;color:#fff;font:14px/1.4 sans-serif;';
+      box.textContent = 'HijiForge could not start, so buttons will not respond. The file is probably incomplete or damaged. Details: ' +
+        (boot.errors.length ? boot.errors.join(' | ') : 'no error was reported, which usually means the end of the file is missing.');
+      (document.body || document.documentElement).appendChild(box);
+    }
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(report, 1500); });
+    window.addEventListener('load', function () { setTimeout(report, 500); });
+  })();
+  </script>
+
+  <script>
+  (function () {
+    try {
+      var s = localStorage.getItem('hijiforgePrefs');
+      var data = s ? JSON.parse(s) : {};
+      var html = document.documentElement;
+
+      var pref = 'auto';
+      if (data.themePreference) pref = data.themePreference;
+      var dark = false;
+      if (pref === 'dark') dark = true;
+      else if (pref === 'light') dark = false;
+      else {
+        var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+        dark = !!(mq && mq.matches);
+      }
+
+      html.classList.add('no-transition');
+      if (dark) html.classList.add('dark-mode');
+      html.style.backgroundColor = dark ? '#121212' : '#f5f5f5';
+
+      var tab = data.activeTab;
+      if (tab === 'username' || tab === 'fuse' || tab === 'password') {
+        html.setAttribute('data-hf-tab', tab);
+      }
+
+      var source = data.fSource;
+      if (source === 'random' || source === 'existing') {
+        html.setAttribute('data-hf-source', source);
+      }
+
+      setTimeout(function () { html.classList.remove('no-transition'); }, 200);
+    } catch (e) {}
+  })();
+  </script>
+
+  <style>
+    html.no-transition, html.no-transition *, html.no-transition *::before, html.no-transition *::after {
+      transition: none !important;
+    }
+
+    :root {
+      --bg-body: #f5f5f5; --bg-app: #fff; --bg-input: #fff; --bg-card: #f9f9f9;
+      --bg-icon: #fafafa; --bg-modal: #fff; --bg-tab: #f0f0f0;
+      --text-main: #333; --text-muted: #595959;
+      --maroon: #590915; --maroon-hover: #42060f; --maroon-dark: #2e0409;
+      --cream: #F5E6C8; --text-inverse: var(--cream);
+      --accent-text: var(--maroon);
+      --success-green: #2e7d32;
+      --error-red: #c62828;
+      --amber: #f59e0b; --amber-hover: #d97706; --amber-active: #b45309; --amber-text: #1a1a1a;
+      --border-color: #ccc; --border-card: #eaeaea; --border-icon: #e0e0e0;
+      --rating-cool: #1565c0; --rating-amazing: #bf360c; --rating-epic: #2e7d32;
+      --rating-weak: #c62828; --rating-fair: #bf360c;
+      --rating-strong: #1565c0; --rating-very: #2e7d32;
+      --status-success-bg: #e8f5e9; --status-success-text: #2e7d32;
+      --status-warning-bg: #fff3e0; --status-warning-text: #bf360c;
+      --status-error-bg: #ffebee; --status-error-text: #c62828;
+    }
+    html.dark-mode {
+      --bg-body: #121212; --bg-app: #1e1e1e; --bg-input: #2c2c2c; --bg-card: #2c2c2c;
+      --bg-icon: #2c2c2c; --bg-modal: #2c2c2c; --bg-tab: #2c2c2c;
+      --text-main: #e0e0e0; --text-muted: #b0b0b0;
+      --maroon: #590915; --maroon-hover: #42060f; --maroon-dark: #2e0409;
+      --cream: #F5E6C8; --text-inverse: var(--cream);
+      --accent-text: #ff8a80;
+      --border-color: #444; --border-card: #444; --border-icon: #444;
+      --rating-cool: #64b5f6; --rating-amazing: #ffb74d; --rating-epic: #81c784;
+      --rating-weak: #ef9a9a; --rating-fair: #ffb74d;
+      --rating-strong: #64b5f6; --rating-very: #81c784;
+      --status-success-bg: #14532d; --status-success-text: #86efac;
+      --status-warning-bg: #7c2d12; --status-warning-text: #fcd34d;
+      --status-error-bg: #7f1d1d; --status-error-text: #fca5a5;
+      color-scheme: dark;
+    }
+
+    html.dark-mode .segmented-control {
+      background-color: #262626;
+      border-color: #3a3a3a;
+    }
+
+    html { background-color: var(--bg-body); }
+
+    * {
+      box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-tap-highlight-color: transparent; transition: background-color .3s, color .3s, border-color .3s;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+    }
+    body { background-color: var(--bg-body); margin: 0; padding: 0; display: flex; justify-content: center; }
+    .app-container {
+      width: 100%; max-width: 500px; background-color: var(--bg-app);
+      min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,.1); padding-bottom: 40px;
+    }
+
+    .header {
+      background-color: var(--maroon); color: var(--cream);
+      padding: 15px; font-size: 22px; font-weight: 700; letter-spacing: 1px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-title-wrap { display: inline-flex; align-items: center; gap: 6px; }
+    .header-icons { display: flex; gap: 15px; align-items: center; }
+    .icon-btn-header {
+      cursor: pointer; color: var(--cream); background: transparent; border: none;
+      display: inline-flex; align-items: center; justify-content: center; padding: 5px;
+      border-radius: 50%; transition: transform .2s, background-color .2s;
+    }
+    .icon-btn-header:active { transform: scale(.9); background-color: rgba(255,255,255,.15); }
+    .icon-btn-header:focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
+    .icon-btn-header svg { width: 24px; height: 24px; stroke-width: 2.5px; }
+
+    .tab-container {
+      display: flex; background-color: var(--bg-tab);
+      margin: 15px 20px 10px 20px; padding: 5px;
+      border-radius: 10px; border: 1px solid var(--border-card); gap: 6px;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 700;
+      color: var(--text-muted); background: transparent; border: none; cursor: pointer;
+      border-radius: 6px; transition: all .2s; text-decoration: none !important;
+      appearance: none; -webkit-appearance: none;
+    }
+    .tab-btn:hover:not(:disabled):not(.active) { color: var(--text-main); }
+    .tab-btn.active {
+      background-color: var(--maroon); color: var(--cream) !important;
+      box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
+    }
+    .tab-btn.active:active { background-color: var(--maroon-dark); }
+    .tab-btn:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
+    .tab-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    html[data-hf-tab="fuse"] #tab-btn-fuse,
+    html[data-hf-tab="username"] #tab-btn-username,
+    html[data-hf-tab="password"] #tab-btn-password {
+      background-color: var(--maroon); color: var(--cream) !important;
+      box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
+    }
+    html[data-hf-tab="fuse"] #tab-fuse,
+    html[data-hf-tab="username"] #tab-username,
+    html[data-hf-tab="password"] #tab-password {
+      display: block;
+    }
+
+    .content-area { padding: 10px 20px 20px 20px; display: none; }
+    .content-area.active { display: block; }
+
+    .btn-toggle-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .btn-toggle {
+      flex: 1;
+      min-width: 0;
+      min-height: 44px;
+      padding: 8px 4px;
+      border-radius: 6px;
+      border: 2px solid var(--border-icon);
+      background-color: var(--bg-icon);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: transform .1s, background-color .15s, border-color .15s, color .15s;
+      -webkit-tap-highlight-color: transparent;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .btn-toggle:active { transform: scale(.96); }
+    .btn-toggle.active {
+      background-color: var(--maroon);
+      border-color: var(--maroon-dark);
+      color: var(--cream);
+      box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
+    }
+    .btn-toggle.active:active {
+      background-color: var(--maroon-dark);
+      transform: scale(.96);
+    }
+    .btn-toggle:focus-visible {
+      outline: 2px solid var(--maroon);
+      outline-offset: 2px;
+    }
+    @media (max-width: 380px) {
+      .btn-toggle { font-size: 12px; padding: 8px 2px; }
+      .btn-toggle-group { gap: 4px; }
+    }
+
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 14px; color: var(--text-main); font-weight: 600; margin-bottom: 5px; }
+    .text-input {
+      width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px;
+      font-size: 14px; font-family: Consolas, Monaco, monospace;
+      background-color: var(--bg-input); color: var(--text-main);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .text-input:focus { outline: none; border-color: var(--maroon); box-shadow: 0 0 0 2px rgba(89, 9, 21, 0.15); }
+    .text-input.invalid {
+      border-color: var(--error-red) !important;
+      box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15) !important;
+    }
+    #f-filter-input {
+      border: 1.5px solid var(--border-color);
+      background-color: var(--bg-tab);
+    }
+    #f-filter-input:focus {
+      border-color: var(--maroon);
+      background-color: var(--bg-input);
+    }
+    .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-left: 5px; }
+    .checkbox-item { display: flex; align-items: flex-start; font-size: 13px; color: var(--text-main); cursor: pointer; }
+    .checkbox-item input[type=checkbox] {
+      accent-color: var(--maroon); width: 16px; height: 16px;
+      margin-right: 8px; margin-top: 2px; cursor: pointer; flex-shrink: 0;
+    }
+    .checkbox-item.disabled { opacity: .4; cursor: not-allowed; }
+    .checkbox-item.disabled input[type=checkbox] { cursor: not-allowed; }
+
+    .segmented-control {
+      display: flex; gap: 6px; background-color: #f7f7f7;
+      padding: 5px; border-radius: 10px; margin-bottom: 20px;
+      border: 1px solid #e5e5e5;
+    }
+    .seg-btn {
+      flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 700;
+      color: var(--text-muted); background: transparent; border: none;
+      cursor: pointer; border-radius: 6px; transition: all .2s; font-family: inherit;
+      text-decoration: none !important; appearance: none; -webkit-appearance: none;
+    }
+    .seg-btn:hover:not(.active) { color: var(--text-main); }
+    .seg-btn.active {
+      background-color: var(--maroon); color: var(--cream) !important;
+      box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
+    }
+    .seg-btn.active:active { background-color: var(--maroon-dark); }
+    .seg-btn:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
+
+    html[data-hf-source="random"] #seg-random,
+    html[data-hf-source="existing"] #seg-existing {
+      background-color: var(--maroon); color: var(--cream) !important;
+      box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
+    }
+
+    .input-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: 14px; margin-top: 15px; }
+    .input-row label { color: var(--text-main); font-weight: 600; cursor: pointer; }
+    .input-control { display: flex; align-items: center; }
+    input[type=number] {
+      width: 65px; padding: 6px; text-align: center; border: 1px solid var(--border-color);
+      border-radius: 6px; font-size: 15px; font-weight: 600; margin: 0 8px;
+      background-color: var(--bg-input); color: var(--text-main);
+    }
+    .stepper-btn {
+      background-color: var(--border-icon); border: none; width: 32px; height: 32px;
+      border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 18px;
+      color: var(--text-main); display: flex; justify-content: center; align-items: center;
+    }
+    .stepper-btn:active { background-color: var(--border-color); }
+
+    .btn-generate {
+      width: 100%; background-color: var(--maroon); color: var(--cream);
+      border: none; padding: 15px; font-size: 16px; font-weight: 700;
+      border-radius: 6px; cursor: pointer; margin-top: 20px; letter-spacing: .3px;
+    }
+    .btn-generate:active { transform: scale(.98); background-color: var(--maroon-hover); }
+    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-generate:focus-visible, .btn-action:focus-visible, .stepper-btn:focus-visible, .seg-btn:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
+
+    #f-update-actions {
+      display: none;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .btn-cancel-update {
+      flex: 1; background-color: var(--amber); color: var(--amber-text);
+      border: 2px solid var(--amber); padding: 15px; font-size: 16px; font-weight: 700;
+      border-radius: 6px; cursor: pointer; letter-spacing: .3px;
+    }
+    .btn-cancel-update:hover { background-color: var(--amber-hover); border-color: var(--amber-hover); }
+    .btn-cancel-update:active { transform: scale(.98); background-color: var(--amber-active); border-color: var(--amber-active); }
+    .btn-cancel-update:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+    .btn-update-file {
+      flex: 1; background-color: var(--success-green); color: #fff;
+      border: none; padding: 15px; font-size: 16px; font-weight: 700;
+      border-radius: 6px; cursor: pointer; letter-spacing: .3px;
+    }
+    .btn-update-file:active { transform: scale(.98); filter: brightness(0.9); }
+    .btn-update-file:focus-visible { outline: 2px solid var(--success-green); outline-offset: 2px; }
+
+    .btn-backup-primary {
+      width: 100%; background-color: var(--success-green); color: #fff;
+      border: none; padding: 15px; font-size: 16px; font-weight: 700;
+      border-radius: 6px; cursor: pointer; letter-spacing: .3px;
+    }
+    .btn-backup-primary:active { transform: scale(.98); filter: brightness(0.9); }
+    .btn-backup-primary:focus-visible { outline: 2px solid var(--success-green); outline-offset: 2px; }
+
+    .action-buttons-group { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .action-buttons-group.show { display: grid; }
+    .btn-action {
+      background-color: var(--bg-card); color: var(--text-main);
+      border: 2px solid var(--border-color); padding: 12px; font-size: 13px; font-weight: 700;
+      border-radius: 6px; cursor: pointer; text-align: center; transition: all .2s;
+      display: flex; justify-content: center; align-items: center; gap: 5px;
+      box-sizing: border-box; text-decoration: none !important;
+    }
+    .btn-action:hover { background-color: var(--border-color); }
+    .btn-action:active { transform: scale(.98); }
+    .btn-action:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-action.primary { background-color: var(--maroon); color: var(--cream); border-color: var(--maroon); }
+    .btn-action.primary:hover:not(:disabled) { background-color: var(--maroon-hover); }
+    .btn-action.success-state { background-color: var(--success-green); border-color: var(--success-green); color: #fff; }
+
+    .password-list { margin-top: 20px; }
+    .password-card {
+      border-bottom: 1px solid var(--border-card); padding: 15px 0;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .password-text-container {
+      display: flex; justify-content: space-between; width: 100%; align-items: center;
+      margin-bottom: 8px; background-color: var(--bg-card); border-radius: 8px;
+      padding: 10px; border: 1px solid var(--border-card);
+    }
+    .password-text {
+      font-family: Consolas, Monaco, 'Roboto Mono', monospace; font-size: 22px;
+      letter-spacing: 1px; color: var(--text-main); flex-grow: 1;
+      text-align: center; word-break: break-all; font-weight: 600;
+    }
+    .fuse-card {
+      background-color: var(--bg-card); border: 1px solid var(--border-card);
+      border-radius: 8px; margin-bottom: 15px; padding: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,.02);
+    }
+    .fuse-name {
+      font-size: 14px; font-weight: 700; color: var(--cream);
+      background-color: var(--maroon); margin: -15px -15px 12px -15px;
+      padding: 10px 15px; border-radius: 8px 8px 0 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    html.dark-mode .fuse-name { color: var(--cream); }
+
+    .fuse-name-text {
+      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .fuse-index {
+      font-family: inherit;
+      color: inherit;
+      font-size: inherit;
+      margin-right: 6px;
+      flex-shrink: 0;
+    }
+
+    .fuse-badges { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
+    .mac-dot {
+      display: block; width: 11px; height: 11px; border-radius: 50%;
+      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2);
+    }
+    .mac-dot.dot-m { background-color: #3b82f6; }
+    .mac-dot.dot-u { background-color: #eab308; }
+    .mac-dot.dot-p { background-color: #22c55e; }
+    html.dark-mode .mac-dot.dot-m { background-color: #60a5fa; }
+    html.dark-mode .mac-dot.dot-u { background-color: #fde047; }
+    html.dark-mode .mac-dot.dot-p { background-color: #4ade80; }
+
+    .fuse-row { margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .fuse-row-label { font-size: 12px; font-weight: 600; color: var(--text-muted); width: 70px; flex-shrink: 0; }
+    .fuse-row-value {
+      font-family: Consolas, Monaco, monospace; font-size: 15px; font-weight: 600;
+      color: var(--text-main); flex-grow: 1; word-break: break-all;
+    }
+    .icon-btn {
+      background: none; border: none; cursor: pointer; color: var(--text-muted);
+      padding: 8px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+      transition: transform .1s, background-color .1s, color .1s; flex-shrink: 0;
+    }
+    .fuse-name .icon-btn { color: var(--cream); }
+    .icon-btn:active { color: var(--maroon); background-color: var(--border-color); transform: scale(.85); }
+    .fuse-name .icon-btn:active { color: var(--cream); }
+    .icon-btn:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
+    .fuse-name .icon-btn:focus-visible { outline: 2px solid var(--cream); }
+    .icon-btn svg { width: 20px; height: 20px; stroke-width: 2.5px; }
+    .icon-checkmark { stroke: #2e7d32 !important; stroke-width: 3px !important; }
+
+    .strength-bar-container { width: 100%; height: 5px; background-color: var(--border-card); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+    .strength-bar { height: 100%; width: 0; transition: width .3s, background-color .3s; }
+    .strength-text { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
+    .strength-bar[data-rating="cool"] { width: 33%; background-color: var(--rating-cool); }
+    .strength-bar[data-rating="amazing"] { width: 66%; background-color: var(--rating-amazing); }
+    .strength-bar[data-rating="epic"] { width: 100%; background-color: var(--rating-epic); }
+    .strength-text[data-rating="cool"] { color: var(--rating-cool); }
+    .strength-text[data-rating="amazing"] { color: var(--rating-amazing); }
+    .strength-text[data-rating="epic"] { color: var(--rating-epic); }
+    .strength-bar[data-rating="weak"] { width: 25%; background-color: var(--rating-weak); }
+    .strength-bar[data-rating="fair"] { width: 50%; background-color: var(--rating-fair); }
+    .strength-bar[data-rating="strong"] { width: 75%; background-color: var(--rating-strong); }
+    .strength-bar[data-rating="very"] { width: 100%; background-color: var(--rating-very); }
+    .strength-text[data-rating="weak"] { color: var(--rating-weak); }
+    .strength-text[data-rating="fair"] { color: var(--rating-fair); }
+    .strength-text[data-rating="strong"] { color: var(--rating-strong); }
+    .strength-text[data-rating="very"] { color: var(--rating-very); }
+
+    .filter-container {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-top: 15px; margin-bottom: 5px;
+    }
+    .filter-actions {
+      display: flex; gap: 8px; align-items: center;
+    }
+
+    .empty-state {
+      text-align: center; padding: 30px 10px; color: var(--text-muted);
+      font-size: 14px; font-style: italic;
+    }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,.6); display: flex; justify-content: center; align-items: center;
+      z-index: 1000; opacity: 0; visibility: hidden; transition: opacity .3s, visibility .3s;
+    }
+    .modal-overlay.show { opacity: 1; visibility: visible; }
+    .modal-content {
+      background-color: var(--bg-modal); width: 90%; max-width: 450px;
+      max-height: 85vh; border-radius: 12px; padding: 20px; overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,.3); transform: translateY(20px);
+      transition: transform .3s; color: var(--text-main);
+    }
+    .modal-overlay.show .modal-content { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--accent-text); }
+    .modal-close { cursor: pointer; color: var(--text-muted); background: transparent; border: none; font-size: 24px; font-weight: 700; padding: 0 6px; border-radius: 4px; }
+    .about-section { margin-bottom: 15px; }
+    .about-section p { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0 0 8px 0; text-align: left; }
+    .about-section p:last-child { margin-bottom: 0; }
+
+    .warning-text {
+      color: var(--status-warning-text);
+      background-color: var(--status-warning-bg);
+      border: 1px solid var(--status-warning-text);
+      font-weight: 600; margin-top: 10px; padding: 10px; border-radius: 6px;
+      text-align: left;
+    }
+    .about-section.warning-text p { color: var(--status-warning-text); text-align: left; }
+    .preview-list {
+      font-size: 12px; color: var(--text-muted); line-height: 1.7;
+      padding: 10px; background: var(--bg-tab); border-radius: 6px;
+      margin-top: 8px; word-break: break-word; text-align: left;
+      max-height: 140px; overflow-y: auto;
+    }
+
+    .status-message {
+      margin-top: 10px; padding: 10px; border-radius: 6px;
+      font-size: 13px; font-weight: 600; text-align: center;
+    }
+    .status-message.success { background-color: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-text); }
+    .status-message.error { background-color: var(--status-error-bg); color: var(--status-error-text); border: 1px solid var(--status-error-text); }
+
+    .app-container { padding-bottom: 80px; }
+
+    .modal-action-row { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+    .modal-action-row .btn-action { width: auto; padding: 10px 20px; min-width: 80px; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    @media (max-width: 500px) {
+      .text-input, input[type=number], .seg-btn, .btn-action, .btn-generate, .btn-update-file, .btn-cancel-update, .btn-backup-primary { font-size: 16px; }
+    }
+
+    #print-section { display: none; }
+    @media print {
+      .no-print, .modal-overlay { display: none !important; }
+      body { background-color: #fff; color: #000; }
+      .app-container { display: none !important; }
+      #print-section { display: block !important; padding: 20px; color: #000; }
+      #print-section h1 { font-size: 24px; margin: 0 0 5px 0; border-bottom: 2px solid #000; padding-bottom: 10px; }
+      #print-section .print-date { font-size: 12px; color: #555; margin-bottom: 20px; }
+      #print-section .print-item { margin-bottom: 15px; page-break-inside: avoid; }
+      #print-section .print-item-title { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+      #print-section .print-item-row { font-size: 14px; margin: 3px 0; display: flex; align-items: baseline; }
+      #print-section .print-label { display: inline-block; width: 80px; font-weight: bold; flex-shrink: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<noscript>
+  <div style="padding: 20px; background: #ffebee; color: #c62828; text-align: center; font-family: sans-serif; font-weight: 600;">
+    HijiForge requires JavaScript to function. Please enable JavaScript in your browser.
+  </div>
+</noscript>
+
+<div class="app-container" id="app-container">
+  <div class="header no-print">
+    <div class="header-left">
+      <button type="button" class="icon-btn-header" id="btn-about" title="Privacy & data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="header-title-wrap">
+        <span>HijiForge</span>
+      </div>
+    </div>
+    <div class="header-icons">
+      <button type="button" class="icon-btn-header" id="btn-backup" title="Update fused credentials from a saved backup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <button type="button" class="icon-btn-header" id="btn-theme-toggle" title="Toggle Theme">
+        <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </button>
+      <button type="button" class="icon-btn-header" id="btn-reset" title="Wipe saved data and results">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="notif-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <div class="tab-container no-print" role="tablist" aria-label="HijiForge sections">
+    <button type="button" role="tab" aria-selected="false" aria-controls="tab-username" class="tab-btn" data-tab="username" id="tab-btn-username">HijiUser</button>
+    <button type="button" role="tab" aria-selected="true" aria-controls="tab-fuse" class="tab-btn" data-tab="fuse" id="tab-btn-fuse">HijiFuse</button>
+    <button type="button" role="tab" aria-selected="false" aria-controls="tab-password" class="tab-btn" data-tab="password" id="tab-btn-password">HijiPass</button>
+  </div>
+
+  <div class="content-area no-print" id="tab-username" role="tabpanel" aria-labelledby="tab-btn-username">
+    <div class="btn-toggle-group">
+      <button type="button" id="u-toggle-lower" class="btn-toggle active" aria-pressed="true">Lower</button>
+      <button type="button" id="u-toggle-upper" class="btn-toggle" aria-pressed="false">Upper</button>
+      <button type="button" id="u-toggle-unique" class="btn-toggle active" aria-pressed="true">Unique</button>
+    </div>
+    <div class="form-group">
+      <label for="u-customNumbers">Custom Numbers:</label>
+      <input type="text" inputmode="numeric" id="u-customNumbers" class="text-input" value="" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+    </div>
+    <div class="form-group">
+      <label for="u-exclude">Exclude Characters:</label>
+      <input type="text" id="u-exclude" class="text-input" value="" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+    </div>
+    <div class="checkbox-group">
+      <label class="checkbox-item" id="u-label-ascenders">
+        <input type="checkbox" id="u-excludeAscenders" checked>
+        <span>Exclude ascenders</span>
+      </label>
+      <label class="checkbox-item" id="u-label-descenders">
+        <input type="checkbox" id="u-excludeDescenders" checked>
+        <span>Exclude descenders</span>
+      </label>
+    </div>
+    <div class="input-row">
+      <label for="u-minChars">Minimum Characters per Type:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="u-minChars" data-delta="-1">-</button>
+        <input type="number" id="u-minChars" value="1" min="0" max="10">
+        <button type="button" class="stepper-btn" data-target="u-minChars" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <label for="u-count">Number of Usernames:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="u-count" data-delta="-1">-</button>
+        <input type="number" id="u-count" value="1" min="1" max="50">
+        <button type="button" class="stepper-btn" data-target="u-count" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <label for="u-length">Username Length:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="u-length" data-delta="-1">-</button>
+        <input type="number" id="u-length" value="10" min="6" max="50">
+        <button type="button" class="stepper-btn" data-target="u-length" data-delta="1">+</button>
+      </div>
+    </div>
+    <button type="button" class="btn-generate" id="u-btn-generate">Generate Usernames</button>
+    <div id="u-actionButtons" class="action-buttons-group">
+      <button type="button" class="btn-action" data-action="copy-all" data-tab="username">Copy All</button>
+      <button type="button" class="btn-action" data-action="export" data-tab="username">Export CSV</button>
+      <button type="button" class="btn-action" data-action="export-txt" data-tab="username">Export TXT</button>
+      <button type="button" class="btn-action" data-action="print" data-tab="username">Print PDF</button>
+    </div>
+    <div class="password-list" id="u-list"></div>
+  </div>
+
+  <div class="content-area no-print" id="tab-fuse" role="tabpanel" aria-labelledby="tab-btn-fuse">
+    <div class="segmented-control" id="f-segmented-control">
+      <button type="button" class="seg-btn" data-source="random" id="seg-random">Randomize</button>
+      <button type="button" class="seg-btn active" data-source="existing" id="seg-existing">Existing</button>
+    </div>
+
+    <div id="f-randomize-options" style="display: none; padding-bottom: 15px; margin-bottom: 5px;">
+      <div class="checkbox-group" style="margin-bottom: 10px;">
+        <label class="checkbox-item">
+          <input type="checkbox" id="f-use-manual">
+          <span>Use custom manual username</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="f-no-username">
+          <span>Do not include username</span>
+        </label>
+        <label class="checkbox-item">
+          <input type="checkbox" id="f-no-password">
+          <span>Do not include password</span>
+        </label>
+      </div>
+      <div class="form-group" id="f-manualUsername-group" style="display: none; margin-bottom: 0;">
+        <label for="f-manualUsername">Custom Username:</label>
+        <input type="text" id="f-manualUsername" class="text-input invalid" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+      </div>
+      <div class="input-row" style="margin-bottom: 0;">
+        <label for="f-count">Number of Fused Credentials:</label>
+        <div class="input-control">
+          <button type="button" class="stepper-btn" data-target="f-count" data-delta="-1">-</button>
+          <input type="number" id="f-count" value="1" min="1" max="50">
+          <button type="button" class="stepper-btn" data-target="f-count" data-delta="1">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="f-form-inputs">
+      <div class="form-group">
+        <label for="f-appName">Platform Name:</label>
+        <input type="text" id="f-appName" class="text-input invalid" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+      </div>
+      <div class="form-group" style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <div style="flex: 1;">
+          <label for="f-firstName">First Name:</label>
+          <input type="text" id="f-firstName" class="text-input" maxlength="50" autocomplete="off" autocapitalize="words">
+        </div>
+        <div style="flex: 1;">
+          <label for="f-lastName">Last Name:</label>
+          <input type="text" id="f-lastName" class="text-input" maxlength="50" autocomplete="off" autocapitalize="words">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="f-email">Email:</label>
+        <input type="email" id="f-email" class="text-input" maxlength="50" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="form-group">
+        <label for="f-telephone">Telephone:</label>
+        <input type="tel" id="f-telephone" class="text-input" maxlength="50" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <button type="button" class="btn-generate" id="f-btn-generate">Generate Fused</button>
+
+    <div id="f-update-actions">
+      <button type="button" class="btn-cancel-update" id="f-btn-cancel-update">Cancel</button>
+      <button type="button" class="btn-update-file" id="f-btn-update-file">Update</button>
+    </div>
+
+    <div id="f-filter-container" class="filter-container" style="display: none;">
+      <input type="text" id="f-filter-input" class="text-input" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Filter fused credentials">
+      <div class="filter-actions">
+        <button type="button" class="btn-action" id="f-clear-filter" style="flex: 1;">Clear Filter</button>
+        <button type="button" class="btn-action" id="f-changed-only-btn" style="flex: 1; display: none;">Changed Only</button>
+      </div>
+    </div>
+
+    <div id="f-actionButtons" class="action-buttons-group">
+      <button type="button" class="btn-action" data-action="copy-all" data-tab="fuse">Copy All</button>
+      <button type="button" class="btn-action" data-action="export" data-tab="fuse">Export CSV</button>
+      <button type="button" class="btn-action" data-action="export-txt" data-tab="fuse">Export TXT</button>
+      <button type="button" class="btn-action" data-action="print" data-tab="fuse">Print PDF</button>
+    </div>
+    <div id="f-backup-actions" style="display: none; margin-top: 10px;">
+      <button type="button" class="btn-backup-primary" id="f-btn-backup-primary" title="Download all fused credentials as a protected backup">Backup</button>
+    </div>
+    <div class="password-list" id="f-list"></div>
+  </div>
+
+  <div class="content-area no-print" id="tab-password" role="tabpanel" aria-labelledby="tab-btn-password">
+    <div class="btn-toggle-group">
+      <button type="button" id="p-toggle-lower" class="btn-toggle active" aria-pressed="true">Lower</button>
+      <button type="button" id="p-toggle-upper" class="btn-toggle active" aria-pressed="true">Upper</button>
+      <button type="button" id="p-toggle-numbers" class="btn-toggle active" aria-pressed="true">Numbers</button>
+      <button type="button" id="p-toggle-symbols" class="btn-toggle active" aria-pressed="true">Symbols</button>
+    </div>
+    <div class="form-group">
+      <label for="p-exclude">Exclude Characters:</label>
+      <input type="text" id="p-exclude" class="text-input" value="" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+    </div>
+    <div class="checkbox-group">
+      <label class="checkbox-item" id="p-label-similar">
+        <input type="checkbox" id="p-excludeSimilar" checked>
+        <span>Exclude similar characters</span>
+      </label>
+      <label class="checkbox-item" id="p-label-require">
+        <input type="checkbox" id="p-requireEach" checked>
+        <span>Require at least one of each selected type</span>
+      </label>
+    </div>
+    <div class="input-row">
+      <label for="p-count">Number of Passwords:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="p-count" data-delta="-1">-</button>
+        <input type="number" id="p-count" value="1" min="1" max="50">
+        <button type="button" class="stepper-btn" data-target="p-count" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <label for="p-length">Password Length:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="p-length" data-delta="-1">-</button>
+        <input type="number" id="p-length" value="20" min="8" max="50">
+        <button type="button" class="stepper-btn" data-target="p-length" data-delta="1">+</button>
+      </div>
+    </div>
+    <button type="button" class="btn-generate" id="p-btn-generate">Generate Passwords</button>
+    <div id="p-actionButtons" class="action-buttons-group">
+      <button type="button" class="btn-action" data-action="copy-all" data-tab="password">Copy All</button>
+      <button type="button" class="btn-action" data-action="export" data-tab="password">Export CSV</button>
+      <button type="button" class="btn-action" data-action="export-txt" data-tab="password">Export TXT</button>
+      <button type="button" class="btn-action" data-action="print" data-tab="password">Print PDF</button>
+    </div>
+    <div class="password-list" id="p-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="aboutModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
+    <div class="modal-header">
+      <div class="modal-title" id="aboutModalTitle">Privacy & data</div>
+      <button type="button" class="modal-close" id="btn-modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="about-section warning-text">
+      <p><strong>Privacy & Data:</strong> Credentials are generated locally and never sent to any server. HijiForge uses <code>localStorage</code> to remember your preferences and inputs, and <code>sessionStorage</code> for temporary update sessions. <strong>Generated passwords are never saved permanently.</strong> Click the <strong>Power icon</strong> to clear all local data.</p>
+    </div>
+    <div class="about-section">
+      <button type="button" id="btn-clear-clipboard" class="btn-action" style="width: 100%; margin-top: 4px; margin-bottom: 10px;">Clear Clipboard Now</button>
+      <a href="https://github.com/xvnurwzesc/hijiforge" target="_blank" rel="noopener noreferrer" class="btn-action primary" style="width: 100%; text-decoration: none; font-size: 14px; padding: 12px;">View Source on GitHub</a>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="backupModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
+    <div class="modal-header">
+      <div class="modal-title" id="backupModalTitle">Update</div>
+      <button type="button" class="modal-close" id="btn-backup-close" aria-label="Close">×</button>
+    </div>
+    <div class="form-group" style="margin-top: 5px;">
+      <button type="button" id="update-file-trigger" class="btn-action" style="width: 100%; margin-bottom: 0;">Choose File</button>
+      <input type="file" id="update-file" accept=".hf" style="display: none;">
+      <span id="update-file-name" style="text-align: center; margin-top: 8px; display: block; font-size: 12px; color: var(--text-muted);"></span>
+    </div>
+    <div id="update-preview" style="display: none;">
+      <div class="status-message" id="update-status-msg" style="display: block;"></div>
+      <div class="about-section" style="margin-top: 15px;">
+        <p><strong>Preview:</strong></p>
+        <div class="preview-list" id="update-preview-list"></div>
+      </div>
+      <div class="about-section">
+        <p><strong>Select items to update:</strong></p>
+        <div class="checkbox-group" style="padding-left: 0;">
+          <label class="checkbox-item" id="label-upd-metadata"><input type="checkbox" id="upd-metadata"><span>Metadata</span></label>
+          <label class="checkbox-item" id="label-upd-email"><input type="checkbox" id="upd-email"><span>Email</span></label>
+          <label class="checkbox-item" id="label-upd-telephone"><input type="checkbox" id="upd-telephone"><span>Telephone</span></label>
+          <label class="checkbox-item" id="label-upd-username"><input type="checkbox" id="upd-username"><span>Username</span></label>
+          <label class="checkbox-item" id="label-upd-password"><input type="checkbox" id="upd-password"><span>Password</span></label>
+        </div>
+      </div>
+      <button type="button" id="btn-do-update" class="btn-action" style="width: 100%; margin-top: 10px; background-color: var(--success-green); color: #fff; border-color: var(--success-green);" disabled>Load</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="confirmModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" style="max-width: 350px; padding: 20px;">
+    <div class="modal-header" style="border-bottom: none; margin-bottom: 10px; padding-bottom: 0; justify-content: center;">
+      <div class="modal-title" id="confirmModalTitle">Confirm Action</div>
+    </div>
+    <div class="about-section" style="margin-bottom: 25px; text-align: center;">
+      <p id="confirmModalMessage" style="font-size: 14px; color: var(--text-main); line-height: 1.5; margin: 0; text-align: center;"></p>
+    </div>
+    <div class="modal-action-row">
+      <button type="button" class="btn-action" id="btn-confirm-cancel">Cancel</button>
+      <button type="button" class="btn-action primary" id="btn-confirm-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="editMetadataModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="editMetadataTitle" style="max-width: 350px; padding: 20px;">
+    <div class="modal-header" style="border-bottom: none; margin-bottom: 10px; padding-bottom: 0; justify-content: center;">
+      <div class="modal-title" id="editMetadataTitle">Edit Metadata</div>
+    </div>
+
+    <div class="segmented-control" style="margin-bottom: 15px;" id="edit-meta-tabs">
+      <button type="button" class="seg-btn active" id="edit-tab-platform">Platform</button>
+      <button type="button" class="seg-btn" id="edit-tab-name">Name</button>
+    </div>
+
+    <div id="edit-content-platform" style="margin-bottom: 15px;">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Platform Name</label>
+        <input type="text" id="edit-appName-input" class="text-input" maxlength="50" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <div id="edit-content-name" style="display: none; margin-bottom: 15px;">
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>First Name</label>
+        <input type="text" id="edit-first-input" class="text-input" maxlength="50" autocomplete="off" autocapitalize="words">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Last Name</label>
+        <input type="text" id="edit-last-input" class="text-input" maxlength="50" autocomplete="off" autocapitalize="words">
+      </div>
+    </div>
+
+    <div id="edit-single-group" style="display: none; margin-bottom: 15px;">
+      <input type="text" id="edit-single-input" class="text-input" maxlength="50" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="modal-action-row">
+      <button type="button" class="btn-action" id="btn-edit-cancel">Cancel</button>
+      <button type="button" class="btn-action primary" id="btn-edit-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="print-section"></div>
+
+<script>
+  'use strict';
+
+  const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  const SIMILAR_SET = '0O1lI|';
+  const RISKY_LEADING = '=+-@';
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const MAX_DUPLICATE_ATTEMPTS = 30;
+  const SAVE_DEBOUNCE_MS = 400;
+  const CLEAR_CLIPBOARD_ON_POWER = true;
+  const CLIPBOARD_AUTO_CLEAR_MS = 60000;
+  const MAX_BACKUP_FILE_BYTES = 5 * 1024 * 1024;
+  const MAX_FUSE_PER_FILE = 50;
+  const VALID_RATINGS = { cool:1, amazing:1, epic:1, weak:1, fair:1, strong:1, very:1 };
+
+  const BACKUP_EXTENSION = '.hf';
+  const BACKUP_PASSPHRASE = 'hijiforge-backup-v1';
+
+  const PREFS_KEY = 'hijiforgePrefs';
+  const SESSION_KEY = 'hijiforgeSession';
+
+  const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+  const IDLE_THROTTLE_MS = 1000;
+  const IDLE_FLAG_KEY = 'hijiforgeIdleRefresh';
+
+  let themePreference = 'auto';
+  let activeTab = 'fuse';
+  let lastFocusedElement = null;
+  let saveDebounceTimer = null;
+  let savedTitle = null;
+
+  let usernameResults = [];
+  let passwordResults = [];
+  let fuseResults = [];
+
+  let uOptions = { lower: true, upper: false, unique: true };
+  let pOptions = { lower: true, upper: true, numbers: true, symbols: true };
+
+  let savedAscState = false;
+  let savedDescState = false;
+  let clipboardHoldsCredential = false;
+  let clipboardClearTimer = null;
+
+  let updateState = null;
+  let isUpdateModeActive = false;
+  let currentUpdateMode = null;
+  let hasGeneratedUpdate = false;
+  let updateFormSnapshot = null;
+
+  let changedFuse = { username: new Set(), password: new Set(), metadata: new Set() };
+  let batchUpdateDone = false;
+
+  let idleArmed = false;
+  let idleRemainingMs = 0;
+  let idleLastTickAt = 0;
+  let idleLastResetAt = 0;
+  let idleTimerHandle = null;
+  let idleStatusActive = false;
+
+  let currentEditType = null;
+  let currentEditIndex = -1;
+
+  let currentFilterText = '';
+  let isChangedOnly = false;
+
+  function escapeHTML(str) {
+    if (str == null) return '';
+    return String(str).replace(/[&<>'"]/g,
+      tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+    );
+  }
+
+  function csvEscape(v, allowGuard) {
+    let s = String(v == null ? '' : v);
+    if (allowGuard && (/^[=+\-@\t\r\n]/.test(s) || /^0\d/.test(s))) s = "'" + s;
+    return s.replace(/"/g, '""');
+  }
+
+  function safeRegExp(pattern, flags, fallbackPattern, fallbackFlags) {
+    try { return new RegExp(pattern, flags); }
+    catch (e) { return new RegExp(fallbackPattern, fallbackFlags); }
+  }
+  const NAME_INVALID_RE = safeRegExp(
+    "[^\\p{L}\\p{M}\\s'\\u2019.\\-]", 'gu',
+    "[^A-Za-z\\u00C0-\\u024F\\u0300-\\u036F\\s'\\u2019.\\-]", 'g');
+  const NAME_AFTER_SEPARATOR_RE = safeRegExp(
+    "(^|[-])(\\p{L})", 'gu',
+    "(^|[-])([A-Za-z\\u00C0-\\u024F])", 'g');
+
+  function normalizePlatformName(str) {
+    return String(str == null ? '' : str).replace(/\s+/g, ' ').trim();
+  }
+
+  function formatPersonName(str) {
+    if (!str) return '';
+    return String(str).trim().replace(/\S+/g, function (word) {
+      if (word !== word.toLowerCase() && word !== word.toUpperCase()) return word;
+      return word.toLowerCase().replace(NAME_AFTER_SEPARATOR_RE, function (m, sep, ch) { return sep + ch.toUpperCase(); });
+    });
+  }
+
+  function sanitizeName(str) {
+    return String(str == null ? '' : str).replace(NAME_INVALID_RE, '');
+  }
+
+  function sanitizePhone(str) {
+    return String(str == null ? '' : str).replace(/[^0-9+\-\s()]/g, '');
+  }
+
+  function sanitizeUsername(str) {
+    return String(str == null ? '' : str).replace(/[^a-zA-Z0-9._+\-@]/g, '');
+  }
+
+  function sanitizePassword(str) {
+    return String(str == null ? '' : str).replace(/[\x00-\x1f\x7f]/g, '');
+  }
+
+  function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  }
+
+  function base64ToArrayBuffer(base64) {
+    const binary_string = window.atob(base64);
+    const len = binary_string.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary_string.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  async function deriveBackupKey(salt) {
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+      "raw",
+      enc.encode(BACKUP_PASSPHRASE),
+      { name: "PBKDF2" },
+      false,
+      ["deriveBits", "deriveKey"]
+    );
+    return window.crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256"
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      true,
+      ["encrypt", "decrypt"]
+    );
+  }
+
+  async function encryptData(text) {
+    const enc = new TextEncoder();
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const key = await deriveBackupKey(salt);
+    const encrypted = await window.crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      key,
+      enc.encode(text)
+    );
+    return {
+      salt: arrayBufferToBase64(salt),
+      iv: arrayBufferToBase64(iv),
+      data: arrayBufferToBase64(encrypted)
+    };
+  }
+
+  async function decryptData(payload) {
+    const salt = base64ToArrayBuffer(payload.salt);
+    const iv = base64ToArrayBuffer(payload.iv);
+    const data = base64ToArrayBuffer(payload.data);
+
+    const key = await deriveBackupKey(salt);
+    const decrypted = await window.crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv },
+      key,
+      data
+    );
+    return new TextDecoder().decode(decrypted);
+  }
+
+  function getFuseSource() {
+    const btn = document.querySelector('.seg-btn.active[data-source]');
+    if (btn) return btn.dataset.source;
+    const attr = document.documentElement.getAttribute('data-hf-source');
+    return (attr === 'random' || attr === 'existing') ? attr : 'existing';
+  }
+
+  function setFuseSource(source) {
+    if (isUpdateModeActive) return;
+    document.documentElement.setAttribute('data-hf-source', source);
+    document.querySelectorAll('.seg-btn[data-source]').forEach(b => {
+      b.classList.toggle('active', b.dataset.source === source);
+    });
+    const randOpts = document.getElementById('f-randomize-options');
+    if (randOpts) randOpts.style.display = source === 'random' ? 'block' : 'none';
+  }
+
+  function toggleManualUsernameInput(isChecked) {
+    const grp = document.getElementById('f-manualUsername-group');
+    if (grp) grp.style.display = isChecked ? 'block' : 'none';
+  }
+
+  function saveSettingsDebounced() {
+    clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(saveSettings, SAVE_DEBOUNCE_MS);
+  }
+
+  function secureRandomInt(max) {
+    if (max <= 0) return 0;
+    if (!window.crypto || !window.crypto.getRandomValues) {
+      throw new Error('Crypto API is unavailable. Please use a modern browser.');
+    }
+    const RANGE = 0x100000000;
+    const limit = Math.floor(RANGE / max) * max;
+    const arr = new Uint32Array(1);
+    let v;
+    do { window.crypto.getRandomValues(arr); v = arr[0]; } while (v >= limit);
+    return v % max;
+  }
+
+  function getRandomChar(str) {
+    if (!str || str.length === 0) return '';
+    const chars = Array.from(str);
+    return chars[secureRandomInt(chars.length)];
+  }
+
+  function secureShuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = secureRandomInt(i + 1);
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function calculateEntropy(length, poolSize) {
+    if (poolSize === 0) return 0;
+    return Math.floor(length * Math.log2(poolSize));
+  }
+
+  function showConfirm(message) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirmModal');
+      const msgEl = document.getElementById('confirmModalMessage');
+      const btnOk = document.getElementById('btn-confirm-ok');
+      const btnCancel = document.getElementById('btn-confirm-cancel');
+
+      msgEl.textContent = message;
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+
+      const previousFocus = document.activeElement;
+      setTimeout(() => { if (document.body.contains(btnOk)) btnOk.focus(); }, 50);
+
+      function cleanup() {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        btnOk.removeEventListener('click', handleOk);
+        btnCancel.removeEventListener('click', handleCancel);
+        modal.removeEventListener('keydown', handleKey);
+        if (previousFocus && previousFocus !== document.body) {
+          try { previousFocus.focus(); } catch (e) {}
+        }
+      }
+
+      function handleOk() { cleanup(); resolve(true); }
+      function handleCancel() { cleanup(); resolve(false); }
+
+      function handleKey(e) {
+        if (e.key === 'Escape') { handleCancel(); return; }
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey && document.activeElement === btnOk) { e.preventDefault(); btnCancel.focus(); }
+        else if (!e.shiftKey && document.activeElement === btnCancel) { e.preventDefault(); btnOk.focus(); }
+      }
+
+      btnOk.addEventListener('click', handleOk);
+      btnCancel.addEventListener('click', handleCancel);
+      modal.addEventListener('keydown', handleKey);
+    });
+  }
+
+  function isIdleProtectionActive() {
+    return isUpdateModeActive
+        || usernameResults.length > 0
+        || passwordResults.length > 0
+        || fuseResults.length > 0;
+  }
+
+  function scheduleIdleFire() {
+    if (idleTimerHandle) { clearTimeout(idleTimerHandle); idleTimerHandle = null; }
+    if (!idleArmed) return;
+    if (document.hidden) return;
+    idleLastTickAt = Date.now();
+    idleTimerHandle = setTimeout(function () {
+      idleTimerHandle = null;
+      idleRemainingMs = 0;
+      performIdleRefresh();
+    }, idleRemainingMs);
+  }
+
+  function armIdleTimer() {
+    idleArmed = true;
+    idleRemainingMs = IDLE_TIMEOUT_MS;
+    idleLastTickAt = Date.now();
+    scheduleIdleFire();
+  }
+
+  function disarmIdleTimer() {
+    idleArmed = false;
+    idleRemainingMs = 0;
+    if (idleTimerHandle) { clearTimeout(idleTimerHandle); idleTimerHandle = null; }
+  }
+
+  function resetIdleTimer() {
+    if (!idleArmed) return;
+    idleRemainingMs = IDLE_TIMEOUT_MS;
+    idleLastTickAt = Date.now();
+    scheduleIdleFire();
+  }
+
+  function resetIdleTimerThrottled() {
+    if (!idleArmed) return;
+    if (document.hidden) return;
+    const now = Date.now();
+    if (now - idleLastResetAt < IDLE_THROTTLE_MS) return;
+    idleLastResetAt = now;
+    resetIdleTimer();
+  }
+
+  function refreshIdleProtection() {
+    if (isIdleProtectionActive()) armIdleTimer();
+    else disarmIdleTimer();
+  }
+
+  function performIdleRefresh() {
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+    try { sessionStorage.setItem(IDLE_FLAG_KEY, '1'); } catch (e) {}
+    location.reload();
+  }
+
+  function showIdleStatus() {
+    idleStatusActive = true;
+    setStatus('system', 'Browser was refreshed after inactivity to protect displayed credentials.', 'warning', true);
+  }
+
+  function hideIdleStatus() {
+    if (!idleStatusActive) return;
+    idleStatusActive = false;
+    setStatus('system', '');
+  }
+
+  function checkIdleFlagOnBoot() {
+    let flag = null;
+    try { flag = sessionStorage.getItem(IDLE_FLAG_KEY); } catch (e) {}
+    if (!flag) return;
+    try { sessionStorage.removeItem(IDLE_FLAG_KEY); } catch (e) {}
+    showIdleStatus();
+  }
+
+  function setCheckboxAvailability(chkId, labelId, enabled) {
+    const c = document.getElementById(chkId);
+    const l = document.getElementById(labelId);
+    if (!c || !l) return;
+    c.disabled = !enabled;
+    if (!enabled) c.checked = false;
+    l.classList.toggle('disabled', !enabled);
+  }
+
+  function updateUpdateModeAvailability() {
+    const hasP = !!(updateState && updateState.fuse && updateState.fuse.some(function (item) { return item.password; }));
+    const hasU = !!(updateState && updateState.fuse && updateState.fuse.some(function (item) { return item.username; }));
+    const hasE = !!(updateState && updateState.fuse && updateState.fuse.some(function (item) { return item.email; }));
+    const hasT = !!(updateState && updateState.fuse && updateState.fuse.some(function (item) { return item.phone; }));
+    const hasM = !!(updateState && updateState.fuse && updateState.fuse.some(function (item) { return item.appName || item.firstName || item.lastName; }));
+
+    setCheckboxAvailability('upd-metadata', 'label-upd-metadata', hasM);
+    setCheckboxAvailability('upd-email', 'label-upd-email', hasE);
+    setCheckboxAvailability('upd-telephone', 'label-upd-telephone', hasT);
+    setCheckboxAvailability('upd-username', 'label-upd-username', hasU);
+    setCheckboxAvailability('upd-password', 'label-upd-password', hasP);
+
+    const ids = ['upd-metadata', 'upd-email', 'upd-telephone', 'upd-username', 'upd-password'];
+    const anyChecked = ids.some(function(id) {
+      const el = document.getElementById(id);
+      return el && el.checked;
+    });
+
+    const btn = document.getElementById('btn-do-update');
+    if (btn) btn.disabled = !anyChecked;
+  }
+
+  function validateEditField() {
+    const input = document.getElementById('edit-single-input');
+    const btnOk = document.getElementById('btn-edit-ok');
+    if (currentEditType === 'email') {
+      const val = input.value.trim();
+      if (val === '' || EMAIL_REGEX.test(val)) {
+        input.classList.remove('invalid');
+        btnOk.disabled = false;
+      } else {
+        input.classList.add('invalid');
+        btnOk.disabled = true;
+      }
+    } else {
+      input.classList.remove('invalid');
+      btnOk.disabled = false;
+    }
+  }
+
+  function switchEditTab(tab) {
+    document.getElementById('edit-tab-platform').classList.toggle('active', tab === 'platform');
+    document.getElementById('edit-tab-name').classList.toggle('active', tab === 'name');
+    document.getElementById('edit-content-platform').style.display = tab === 'platform' ? 'block' : 'none';
+    document.getElementById('edit-content-name').style.display = tab === 'name' ? 'block' : 'none';
+    if (tab === 'platform') document.getElementById('edit-appName-input').focus();
+    if (tab === 'name') document.getElementById('edit-first-input').focus();
+  }
+
+  function openEditModal(type, index) {
+    currentEditType = type;
+    currentEditIndex = index;
+    lastFocusedElement = document.activeElement || document.body;
+    const fuseItem = fuseResults[index];
+    const modal = document.getElementById('editMetadataModal');
+    const title = document.getElementById('editMetadataTitle');
+    const btnOk = document.getElementById('btn-edit-ok');
+
+    btnOk.disabled = false;
+    document.getElementById('edit-single-input').classList.remove('invalid');
+
+    document.getElementById('edit-meta-tabs').style.display = 'none';
+    document.getElementById('edit-content-platform').style.display = 'none';
+    document.getElementById('edit-content-name').style.display = 'none';
+    document.getElementById('edit-single-group').style.display = 'none';
+
+    if (type === 'metadata') {
+      title.textContent = 'Edit Metadata';
+      document.getElementById('edit-meta-tabs').style.display = 'flex';
+      document.getElementById('edit-appName-input').value = fuseItem.appName || '';
+      document.getElementById('edit-first-input').value = fuseItem.firstName || '';
+      document.getElementById('edit-last-input').value = fuseItem.lastName || '';
+      switchEditTab('platform');
+    } else if (type === 'email') {
+      title.textContent = 'Edit Email';
+      document.getElementById('edit-single-group').style.display = 'block';
+      const singleInput = document.getElementById('edit-single-input');
+      singleInput.value = fuseItem.email || '';
+      singleInput.type = 'text';
+      singleInput.maxLength = 50;
+      singleInput.setAttribute('inputmode', 'email');
+      validateEditField();
+    } else if (type === 'phone') {
+      title.textContent = 'Edit Phone';
+      document.getElementById('edit-single-group').style.display = 'block';
+      const singleInput = document.getElementById('edit-single-input');
+      singleInput.value = fuseItem.phone || '';
+      singleInput.type = 'tel';
+      singleInput.maxLength = 50;
+      singleInput.setAttribute('inputmode', 'tel');
+    } else if (type === 'username') {
+      title.textContent = 'Edit Username';
+      document.getElementById('edit-single-group').style.display = 'block';
+      const singleInput = document.getElementById('edit-single-input');
+      singleInput.value = fuseItem.username || '';
+      singleInput.type = 'text';
+      singleInput.maxLength = 50;
+      singleInput.setAttribute('inputmode', 'text');
+    } else if (type === 'password') {
+      title.textContent = 'Edit Password';
+      document.getElementById('edit-single-group').style.display = 'block';
+      const singleInput = document.getElementById('edit-single-input');
+      singleInput.value = fuseItem.password || '';
+      singleInput.type = 'text';
+      singleInput.maxLength = 50;
+      singleInput.setAttribute('inputmode', 'text');
+    }
+
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+
+    setTimeout(() => {
+      if (type === 'metadata') {
+        document.getElementById('edit-appName-input').focus();
+        const len = document.getElementById('edit-appName-input').value.length;
+        document.getElementById('edit-appName-input').setSelectionRange(len, len);
+      } else {
+        const singleInput = document.getElementById('edit-single-input');
+        singleInput.focus();
+        const len = singleInput.value.length;
+        singleInput.setSelectionRange(len, len);
+      }
+    }, 50);
+  }
+
+  function closeEditModal() {
+    currentEditType = null;
+    currentEditIndex = -1;
+    document.getElementById('editMetadataModal').classList.remove('show');
+    document.getElementById('editMetadataModal').setAttribute('aria-hidden', 'true');
+    if (lastFocusedElement && lastFocusedElement !== document.body) {
+      try { lastFocusedElement.focus(); } catch (e) {}
+    }
+  }
+
+  function rebuildResultsFromFuse() {
+    usernameResults = fuseResults
+      .filter(function (item) { return item.username; })
+      .map(function (item) {
+        const ratingKey = item.uFormat
+          ? ratingForUsername(item.uFormat.length, poolSizeFromFormat(item.uFormat))
+          : ratingForUsername(item.username.length, 50);
+        return { value: item.username, ratingKey: ratingKey };
+      });
+    passwordResults = fuseResults
+      .filter(function (item) { return item.password; })
+      .map(function (item) {
+        const ratingKey = item.pFormat
+          ? ratingForPassword(item.pFormat.length, poolSizeFromFormat(item.pFormat))
+          : ratingForPassword(item.password.length, 100);
+        return { value: item.password, ratingKey: ratingKey };
+      });
+    document.getElementById('u-count').value = Math.min(usernameResults.length || 1, 50);
+    document.getElementById('p-count').value = Math.min(passwordResults.length || 1, 50);
+  }
+
+  function captureFormSnapshot() {
+    updateFormSnapshot = {
+      uLower: uOptions.lower, uUpper: uOptions.upper, uUnique: uOptions.unique,
+      uCustomNumbers: document.getElementById('u-customNumbers').value,
+      uExclude: document.getElementById('u-exclude').value,
+      uMinChars: document.getElementById('u-minChars').value,
+      uCount: document.getElementById('u-count').value,
+      uLength: document.getElementById('u-length').value,
+      pLower: pOptions.lower, pUpper: pOptions.upper, pNumbers: pOptions.numbers, pSymbols: pOptions.symbols,
+      pExcludeSimilar: document.getElementById('p-excludeSimilar').checked,
+      pRequireEach: document.getElementById('p-requireEach').checked,
+      pExclude: document.getElementById('p-exclude').value,
+      pCount: document.getElementById('p-count').value,
+      pLength: document.getElementById('p-length').value,
+      fAppName: document.getElementById('f-appName').value,
+      fFirstName: document.getElementById('f-firstName').value,
+      fLastName: document.getElementById('f-lastName').value,
+      fEmail: document.getElementById('f-email').value,
+      fTelephone: document.getElementById('f-telephone').value,
+      fCount: document.getElementById('f-count').value,
+      fUseManual: document.getElementById('f-use-manual').checked,
+      fNoUsername: document.getElementById('f-no-username').checked,
+      fNoPassword: document.getElementById('f-no-password').checked,
+      fManualUsername: document.getElementById('f-manualUsername').value
+    };
+  }
+
+  function restoreFormSnapshot() {
+    if (!updateFormSnapshot) return;
+    const s = updateFormSnapshot;
+
+    if (uOptions.lower !== s.uLower) toggleOption('username', 'lower');
+    if (uOptions.upper !== s.uUpper) toggleOption('username', 'upper');
+    if (uOptions.unique !== s.uUnique) toggleOption('username', 'unique');
+    document.getElementById('u-customNumbers').value = s.uCustomNumbers;
+    document.getElementById('u-exclude').value = s.uExclude;
+    document.getElementById('u-minChars').value = s.uMinChars;
+    document.getElementById('u-count').value = s.uCount;
+    document.getElementById('u-length').value = s.uLength;
+
+    if (pOptions.lower !== s.pLower) toggleOption('password', 'lower');
+    if (pOptions.upper !== s.pUpper) toggleOption('password', 'upper');
+    if (pOptions.numbers !== s.pNumbers) toggleOption('password', 'numbers');
+    if (pOptions.symbols !== s.pSymbols) toggleOption('password', 'symbols');
+    document.getElementById('p-excludeSimilar').checked = s.pExcludeSimilar;
+    document.getElementById('p-requireEach').checked = s.pRequireEach;
+    document.getElementById('p-exclude').value = s.pExclude;
+    document.getElementById('p-count').value = s.pCount;
+    document.getElementById('p-length').value = s.pLength;
+
+    document.getElementById('f-appName').value = s.fAppName;
+    document.getElementById('f-firstName').value = s.fFirstName;
+    document.getElementById('f-lastName').value = s.fLastName;
+    document.getElementById('f-email').value = s.fEmail;
+    document.getElementById('f-telephone').value = s.fTelephone;
+    document.getElementById('f-count').value = s.fCount;
+    document.getElementById('f-use-manual').checked = s.fUseManual;
+    document.getElementById('f-no-username').checked = s.fNoUsername;
+    document.getElementById('f-no-password').checked = s.fNoPassword;
+    document.getElementById('f-manualUsername').value = s.fManualUsername;
+    toggleManualUsernameInput(s.fUseManual);
+
+    if (s.fAppName.trim() === '') document.getElementById('f-appName').classList.add('invalid');
+    else document.getElementById('f-appName').classList.remove('invalid');
+    if (s.fUseManual && s.fManualUsername.trim() === '') document.getElementById('f-manualUsername').classList.add('invalid');
+    else document.getElementById('f-manualUsername').classList.remove('invalid');
+
+    updateFormSnapshot = null;
+  }
+
+  function saveEdit() {
+    if (currentEditIndex === -1) return;
+    const fuseItem = fuseResults[currentEditIndex];
+    if (currentEditType === 'metadata') {
+      fuseItem.appName = normalizePlatformName(document.getElementById('edit-appName-input').value);
+      if (!fuseItem.appName) fuseItem.appName = 'Unknown';
+      fuseItem.firstName = formatPersonName(sanitizeName(document.getElementById('edit-first-input').value));
+      fuseItem.lastName = formatPersonName(sanitizeName(document.getElementById('edit-last-input').value));
+      changedFuse.metadata.add(currentEditIndex);
+    } else if (currentEditType === 'email') {
+      fuseItem.email = document.getElementById('edit-single-input').value.trim();
+      changedFuse.metadata.add(currentEditIndex);
+    } else if (currentEditType === 'phone') {
+      fuseItem.phone = sanitizePhone(document.getElementById('edit-single-input').value).trim();
+      changedFuse.metadata.add(currentEditIndex);
+    } else if (currentEditType === 'username') {
+      const oldU = fuseItem.username || '';
+      const newU = sanitizeUsername(document.getElementById('edit-single-input').value).trim();
+      fuseItem.username = newU;
+      fuseItem.usernameOpt = newU ? 'manual' : 'none';
+
+      if (newU) {
+        const oldFmt = fuseItem.uFormat;
+        const newFmt = analyzeStringFormat(newU, true);
+        if (oldFmt) {
+          const oldHasAsc = /[bdfhijklt]/.test(oldU);
+          const newHasAsc = /[bdfhijklt]/.test(newU);
+          const oldHasDesc = /[gjpqy]/.test(oldU);
+          const newHasDesc = /[gjpqy]/.test(newU);
+
+          if (oldHasAsc !== newHasAsc) {
+            newFmt.excludeAsc = !newHasAsc;
+          } else {
+            newFmt.excludeAsc = oldFmt.excludeAsc !== false;
+          }
+          if (oldHasDesc !== newHasDesc) {
+            newFmt.excludeDesc = !newHasDesc;
+          } else {
+            newFmt.excludeDesc = oldFmt.excludeDesc !== false;
+          }
+          newFmt.unique = oldFmt.unique !== false;
+          newFmt.excludeSimilar = oldFmt.excludeSimilar !== false;
+          newFmt.requireEach = oldFmt.requireEach !== false;
+        }
+        fuseItem.uFormat = newFmt;
+      } else {
+        fuseItem.uFormat = null;
+      }
+
+      changedFuse.username.add(currentEditIndex);
+      rebuildResultsFromFuse();
+      renderResults('username');
+    } else if (currentEditType === 'password') {
+      const oldP = fuseItem.password || '';
+      const newP = sanitizePassword(document.getElementById('edit-single-input').value);
+      fuseItem.password = newP;
+      fuseItem.passwordOpt = newP ? 'manual' : 'none';
+
+      if (newP) {
+        const oldFmt = fuseItem.pFormat;
+        const newFmt = analyzeStringFormat(newP, false);
+        if (oldFmt) {
+          const oldHasSimilar = /[0O1lI|]/.test(oldP);
+          const newHasSimilar = /[0O1lI|]/.test(newP);
+
+          if (oldHasSimilar !== newHasSimilar) {
+            newFmt.excludeSimilar = !newHasSimilar;
+          } else {
+            newFmt.excludeSimilar = oldFmt.excludeSimilar !== false;
+          }
+          newFmt.requireEach = oldFmt.requireEach !== false;
+        }
+        fuseItem.pFormat = newFmt;
+      } else {
+        fuseItem.pFormat = null;
+      }
+
+      changedFuse.password.add(currentEditIndex);
+      rebuildResultsFromFuse();
+      renderResults('password');
+    }
+    hasGeneratedUpdate = true;
+    closeEditModal();
+    renderResults('fuse');
+    saveSettings();
+  }
+
+  function deleteFuseEntry(index) {
+    if (index < 0 || index >= fuseResults.length) return;
+    fuseResults.splice(index, 1);
+
+    function shiftSet(set, deletedIdx) {
+      const next = new Set();
+      for (const i of set) {
+        if (i === deletedIdx) continue;
+        next.add(i > deletedIdx ? i - 1 : i);
+      }
+      return next;
+    }
+    changedFuse.username = shiftSet(changedFuse.username, index);
+    changedFuse.password = shiftSet(changedFuse.password, index);
+    changedFuse.metadata = shiftSet(changedFuse.metadata, index);
+
+    rebuildResultsFromFuse();
+    hasGeneratedUpdate = true;
+
+    renderResults('fuse');
+    renderResults('username');
+    renderResults('password');
+    saveSettings();
+  }
+
+  function switchTab(tabId) {
+    activeTab = tabId;
+    document.documentElement.setAttribute('data-hf-tab', tabId);
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const isActive = btn.dataset.tab === tabId;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', String(isActive));
+    });
+    document.querySelectorAll('.content-area').forEach(area => {
+      area.classList.toggle('active', area.id === 'tab-' + tabId);
+    });
+  }
+
+  const systemDarkMode = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function onSystemThemeChange() {
+    if (themePreference === 'auto') applyTheme();
+  }
+  if (systemDarkMode) {
+    if (systemDarkMode.addEventListener) systemDarkMode.addEventListener('change', onSystemThemeChange);
+    else if (systemDarkMode.addListener) systemDarkMode.addListener(onSystemThemeChange);
+  }
+
+  function getEffectiveDarkMode() {
+    if (themePreference === 'dark') return true;
+    if (themePreference === 'light') return false;
+    return !!(systemDarkMode && systemDarkMode.matches);
+  }
+
+  function updateThemeIcon() {
+    const icon = document.getElementById('theme-icon');
+    if (!icon) return;
+    const isDark = getEffectiveDarkMode();
+
+    if (isDark) {
+      icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+      document.getElementById('btn-theme-toggle').title = 'Switch to Light Mode';
+    } else {
+      icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+      document.getElementById('btn-theme-toggle').title = 'Switch to Dark Mode';
+    }
+  }
+
+  function applyTheme() {
+    const isDark = getEffectiveDarkMode();
+    document.documentElement.classList.toggle('dark-mode', isDark);
+    document.documentElement.style.backgroundColor = isDark ? '#121212' : '#f5f5f5';
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', isDark ? '#2e0409' : '#590915');
+    updateThemeIcon();
+  }
+
+  function setTheme(pref) {
+    themePreference = pref;
+    document.documentElement.classList.add('no-transition');
+    applyTheme();
+    saveSettings();
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        document.documentElement.classList.remove('no-transition');
+      });
+    });
+  }
+
+  function overwriteClipboard() {
+    const fallback = function () {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = ' '; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return !!ok;
+      } catch (e) { return false; }
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(' ').then(function () { return true; }, fallback);
+      }
+    } catch (e) {}
+    return Promise.resolve(fallback());
+  }
+
+  async function resetToDefault() {
+    if ((usernameResults.length || passwordResults.length || fuseResults.length)) {
+      const confirmed = await showConfirm('This will wipe all inputs and results, including any unsaved credentials. Continue?');
+      if (!confirmed) return;
+    }
+
+    clearTimeout(saveDebounceTimer); saveDebounceTimer = null;
+    try { localStorage.removeItem(PREFS_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+    usernameResults = []; passwordResults = []; fuseResults = [];
+    savedAscState = false; savedDescState = false;
+    isUpdateModeActive = false;
+    updateState = null;
+    currentUpdateMode = null;
+    hasGeneratedUpdate = false;
+    updateFormSnapshot = null;
+    changedFuse.username.clear();
+    changedFuse.password.clear();
+    changedFuse.metadata.clear();
+    batchUpdateDone = false;
+    themePreference = 'auto';
+    currentFilterText = '';
+    isChangedOnly = false;
+
+    document.getElementById('u-list').innerHTML = '';
+    document.getElementById('p-list').innerHTML = '';
+    document.getElementById('f-list').innerHTML = '';
+    document.getElementById('print-section').innerHTML = '';
+    document.getElementById('u-actionButtons').classList.remove('show');
+    document.getElementById('p-actionButtons').classList.remove('show');
+    document.getElementById('f-actionButtons').classList.remove('show');
+
+    setStatus('username', ''); setStatus('password', ''); setStatus('fuse', '');
+    setStatus('system', '');
+
+    loadSettings({});
+    unlockUI();
+    switchTab('fuse');
+
+    if (CLEAR_CLIPBOARD_ON_POWER && clipboardHoldsCredential) {
+      overwriteClipboard().then(function (ok) {
+        if (ok) { clipboardHoldsCredential = false; clearTimeout(clipboardClearTimer); return; }
+        setStatus('fuse', 'Warning: Saved settings and results were cleared, but the clipboard could not be cleared.', 'warning');
+      });
+    }
+    refreshIdleProtection();
+  }
+
+  function lockUI() {
+    isUpdateModeActive = true;
+    document.getElementById('tab-btn-username').disabled = true;
+    document.getElementById('tab-btn-password').disabled = true;
+    document.getElementById('tab-btn-fuse').textContent = 'Update';
+    document.getElementById('f-segmented-control').style.display = 'none';
+    document.getElementById('f-form-inputs').style.display = 'none';
+    document.getElementById('f-randomize-options').style.display = 'none';
+
+    const btnGen = document.getElementById('f-btn-generate');
+    btnGen.textContent = 'Generate New Credentials';
+    btnGen.style.display = 'block';
+
+    document.getElementById('f-update-actions').style.display = 'flex';
+    updateBackupUI();
+
+    document.getElementById('f-changed-only-btn').style.display = 'flex';
+    updateFilterVisibility();
+  }
+
+  function unlockUI() {
+    isUpdateModeActive = false;
+    updateState = null;
+    currentUpdateMode = null;
+    hasGeneratedUpdate = false;
+    changedFuse.username.clear();
+    changedFuse.password.clear();
+    changedFuse.metadata.clear();
+    batchUpdateDone = false;
+    currentFilterText = '';
+    isChangedOnly = false;
+
+    document.getElementById('tab-btn-username').disabled = false;
+    document.getElementById('tab-btn-password').disabled = false;
+    document.getElementById('tab-btn-fuse').textContent = 'HijiFuse';
+    document.getElementById('f-segmented-control').style.display = 'flex';
+    document.getElementById('f-form-inputs').style.display = 'block';
+
+    setFuseSource(getFuseSource());
+
+    const btnGen = document.getElementById('f-btn-generate');
+    btnGen.textContent = 'Generate Fused';
+    btnGen.style.display = 'block';
+
+    document.getElementById('f-update-actions').style.display = 'none';
+    updateBackupUI();
+
+    document.getElementById('f-filter-input').value = '';
+    document.getElementById('f-changed-only-btn').classList.remove('primary');
+    document.getElementById('f-changed-only-btn').style.display = 'none';
+
+    document.querySelectorAll('.fuse-badges').forEach(el => el.remove());
+
+    renderResults('fuse');
+  }
+
+  function saveSettings() {
+    if (saveDebounceTimer) { clearTimeout(saveDebounceTimer); saveDebounceTimer = null; }
+
+    const prefs = {
+      themePreference,
+      activeTab,
+      uLower: uOptions.lower, uUpper: uOptions.upper, uUnique: uOptions.unique,
+      uCustomNumbers: document.getElementById('u-customNumbers').value,
+      uExclude: document.getElementById('u-exclude').value,
+      uAscenders: uOptions.upper ? savedAscState : document.getElementById('u-excludeAscenders').checked,
+      uDescenders: uOptions.upper ? savedDescState : document.getElementById('u-excludeDescenders').checked,
+      uMinChars: document.getElementById('u-minChars').value,
+      uCount: document.getElementById('u-count').value,
+      uLength: document.getElementById('u-length').value,
+      pLower: pOptions.lower, pUpper: pOptions.upper, pNumbers: pOptions.numbers, pSymbols: pOptions.symbols,
+      pExcludeSimilar: document.getElementById('p-excludeSimilar').checked,
+      pRequireEach: document.getElementById('p-requireEach').checked,
+      pExclude: document.getElementById('p-exclude').value,
+      pCount: document.getElementById('p-count').value,
+      pLength: document.getElementById('p-length').value,
+      fAppName: document.getElementById('f-appName').value,
+      fFirstName: document.getElementById('f-firstName').value,
+      fLastName: document.getElementById('f-lastName').value,
+      fEmail: document.getElementById('f-email').value,
+      fTelephone: document.getElementById('f-telephone').value,
+      fCount: document.getElementById('f-count').value,
+      fSource: getFuseSource(),
+      fUseManual: document.getElementById('f-use-manual').checked,
+      fNoUsername: document.getElementById('f-no-username').checked,
+      fNoPassword: document.getElementById('f-no-password').checked,
+      fManualUsername: document.getElementById('f-manualUsername').value
+    };
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
+
+    if (isUpdateModeActive) {
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          isUpdateModeActive: true,
+          currentUpdateMode,
+          hasGeneratedUpdate,
+          fuseResults: fuseResults.map(item => ({
+            appName: item.appName, firstName: item.firstName, lastName: item.lastName,
+            email: item.email, phone: item.phone, username: item.username, password: item.password,
+            usernameOpt: item.usernameOpt, passwordOpt: item.passwordOpt,
+            uFormat: item.uFormat || null, pFormat: item.pFormat || null,
+            _lockMeta: item._lockMeta, _lockEmail: item._lockEmail, _lockPhone: item._lockPhone,
+            _lockUser: item._lockUser, _lockPass: item._lockPass
+          })),
+          usernameResults,
+          passwordResults,
+          batchUpdateDone,
+          changedFuseU: [...changedFuse.username],
+          changedFuseP: [...changedFuse.password],
+          changedFuseM: [...changedFuse.metadata],
+          filterText: document.getElementById('f-filter-input').value,
+          changedOnly: isChangedOnly
+        }));
+      } catch (e) {}
+    } else {
+      try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+    }
+  }
+
+  function syncToggle(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('active', val);
+    el.setAttribute('aria-pressed', String(val));
+  }
+
+  function loadSettings(overrideData) {
+    let s;
+    let session = null;
+
+    if (overrideData) {
+      s = overrideData;
+    } else {
+      try {
+        const saved = localStorage.getItem(PREFS_KEY);
+        s = saved ? JSON.parse(saved) : {};
+      } catch (e) { s = {}; }
+      try {
+        const sess = sessionStorage.getItem(SESSION_KEY);
+        session = sess ? JSON.parse(sess) : null;
+      } catch (e) { session = null; }
+    }
+
+    try {
+      if (s.themePreference) themePreference = s.themePreference;
+      else themePreference = 'auto';
+
+      if (s.activeTab === 'username' || s.activeTab === 'fuse' || s.activeTab === 'password') {
+        activeTab = s.activeTab;
+      } else {
+        activeTab = 'fuse';
+      }
+
+      uOptions.lower = s.uLower !== false;
+      uOptions.upper = !!s.uUpper;
+      uOptions.unique = s.uUnique !== false;
+
+      syncToggle('u-toggle-lower', uOptions.lower);
+      syncToggle('u-toggle-upper', uOptions.upper);
+      syncToggle('u-toggle-unique', uOptions.unique);
+
+      document.getElementById('u-customNumbers').value = s.uCustomNumbers || '';
+      document.getElementById('u-exclude').value = s.uExclude || '';
+      document.getElementById('u-minChars').value = (s.uMinChars !== undefined && s.uMinChars !== null) ? s.uMinChars : 1;
+      document.getElementById('u-count').value = s.uCount || 1;
+      document.getElementById('u-length').value = s.uLength || 10;
+
+      const uAc = document.getElementById('u-excludeAscenders'), uDc = document.getElementById('u-excludeDescenders');
+      if (uOptions.upper) {
+        savedAscState = s.uAscenders !== false;
+        savedDescState = s.uDescenders !== false;
+        uAc.disabled = true; uDc.disabled = true; uAc.checked = false; uDc.checked = false;
+        document.getElementById('u-label-ascenders').classList.add('disabled');
+        document.getElementById('u-label-descenders').classList.add('disabled');
+      } else {
+        uAc.disabled = false; uDc.disabled = false;
+        uAc.checked = s.uAscenders !== false; uDc.checked = s.uDescenders !== false;
+        savedAscState = uAc.checked; savedDescState = uDc.checked;
+      }
+
+      pOptions.lower = s.pLower !== false; pOptions.upper = s.pUpper !== false;
+      pOptions.numbers = s.pNumbers !== false; pOptions.symbols = s.pSymbols !== false;
+      syncToggle('p-toggle-lower', pOptions.lower);
+      syncToggle('p-toggle-upper', pOptions.upper);
+      syncToggle('p-toggle-numbers', pOptions.numbers);
+      syncToggle('p-toggle-symbols', pOptions.symbols);
+      document.getElementById('p-excludeSimilar').checked = s.pExcludeSimilar !== false;
+      document.getElementById('p-requireEach').checked = s.pRequireEach !== false;
+      document.getElementById('p-exclude').value = s.pExclude || '';
+      document.getElementById('p-count').value = s.pCount || 1;
+      document.getElementById('p-length').value = s.pLength || 20;
+
+      const fAppNameEl = document.getElementById('f-appName');
+      fAppNameEl.value = s.fAppName || '';
+      if (fAppNameEl.value.trim() === '') fAppNameEl.classList.add('invalid');
+      else fAppNameEl.classList.remove('invalid');
+
+      document.getElementById('f-firstName').value = s.fFirstName || '';
+      document.getElementById('f-lastName').value = s.fLastName || '';
+      document.getElementById('f-email').value = s.fEmail || '';
+      document.getElementById('f-telephone').value = s.fTelephone || '';
+      document.getElementById('f-count').value = s.fCount || 1;
+
+      const useManual = !!s.fUseManual;
+      const noUsername = !!s.fNoUsername;
+      document.getElementById('f-use-manual').checked = useManual;
+      document.getElementById('f-no-username').checked = noUsername;
+      document.getElementById('f-no-password').checked = !!s.fNoPassword;
+
+      const fManualEl = document.getElementById('f-manualUsername');
+      fManualEl.value = s.fManualUsername || '';
+      if (useManual && fManualEl.value.trim() === '') fManualEl.classList.add('invalid');
+      else fManualEl.classList.remove('invalid');
+      toggleManualUsernameInput(useManual);
+
+      setFuseSource(s.fSource === 'random' ? 'random' : 'existing');
+
+      if (session && session.isUpdateModeActive) {
+        isUpdateModeActive = true;
+        currentUpdateMode = session.currentUpdateMode;
+        hasGeneratedUpdate = !!session.hasGeneratedUpdate;
+        fuseResults = session.fuseResults || [];
+        usernameResults = session.usernameResults || [];
+        passwordResults = session.passwordResults || [];
+        batchUpdateDone = !!session.batchUpdateDone;
+        changedFuse.username = new Set(Array.isArray(session.changedFuseU) ? session.changedFuseU : []);
+        changedFuse.password = new Set(Array.isArray(session.changedFuseP) ? session.changedFuseP : []);
+        changedFuse.metadata = new Set(Array.isArray(session.changedFuseM) ? session.changedFuseM : []);
+
+        currentFilterText = session.filterText || '';
+        isChangedOnly = !!session.changedOnly;
+        document.getElementById('f-filter-input').value = currentFilterText;
+        document.getElementById('f-changed-only-btn').classList.toggle('primary', isChangedOnly);
+        document.getElementById('f-changed-only-btn').style.display = 'flex';
+
+        lockUI();
+        renderResults('fuse');
+        if (usernameResults.length) renderResults('username');
+        if (passwordResults.length) renderResults('password');
+        activeTab = 'fuse';
+        switchTab('fuse');
+      }
+    } catch (e) {}
+    applyTheme();
+  }
+
+  function toggleOption(type, opt) {
+    const obj = type === 'username' ? uOptions : pOptions;
+    obj[opt] = !obj[opt];
+
+    const prefix = type === 'username' ? 'u-' : 'p-';
+    syncToggle(prefix + 'toggle-' + opt, obj[opt]);
+
+    if (type === 'username' && opt === 'upper') {
+      const ac = document.getElementById('u-excludeAscenders'), dc = document.getElementById('u-excludeDescenders');
+      const al = document.getElementById('u-label-ascenders'), dl = document.getElementById('u-label-descenders');
+      if (obj.upper) {
+        savedAscState = ac.checked;
+        savedDescState = dc.checked;
+        ac.disabled = true; dc.disabled = true; ac.checked = false; dc.checked = false;
+        al.classList.add('disabled'); dl.classList.add('disabled');
+      } else {
+        ac.disabled = false; dc.disabled = false;
+        ac.checked = savedAscState; dc.checked = savedDescState;
+        al.classList.remove('disabled'); dl.classList.remove('disabled');
+      }
+    }
+    saveSettings();
+  }
+
+  function changeValue(targetId, delta) {
+    const input = document.getElementById(targetId);
+    const min = parseInt(input.min), max = parseInt(input.max);
+    let v = parseInt(input.value);
+    if (isNaN(v)) v = min;
+    v += delta;
+    if (v >= min && v <= max) input.value = v;
+    else if (v > max) input.value = max;
+    else if (v < min) input.value = min;
+    saveSettings();
+  }
+
+  function enforceLimits(targetId) {
+    const input = document.getElementById(targetId);
+    let v = parseInt(input.value);
+    const min = parseInt(input.min), max = parseInt(input.max);
+    if (isNaN(v) || v < min) input.value = min;
+    else if (v > max) input.value = max;
+    saveSettings();
+  }
+
+  function enforceMaxOnInput(targetId) {
+    const input = document.getElementById(targetId);
+    const max = parseInt(input.max);
+    const v = parseInt(input.value);
+    if (!isNaN(v) && v > max) input.value = max;
+  }
+
+  function autoDetectNotifLevel(msg) {
+    if (/error|failed/i.test(msg)) return 'error';
+    if (/warning/i.test(msg)) return 'warning';
+    return 'success';
+  }
+
+  function setStatus(type, msg, level, persist) {
+    const live = document.getElementById('notif-live');
+    if (!live) return;
+    if (!msg) {
+      if (type === 'system') live.textContent = '';
+      return;
+    }
+    const lvl = level || autoDetectNotifLevel(msg);
+    if (lvl !== 'warning' && lvl !== 'error') return;
+    live.textContent = msg;
+  }
+
+  function buildPoolsUsername(fmt) {
+    const isCustom = !fmt;
+    const customNumbers = isCustom ? document.getElementById('u-customNumbers').value : '';
+    const excludeChars = isCustom ? document.getElementById('u-exclude').value : '';
+    const excludeAsc = isCustom ? document.getElementById('u-excludeAscenders').checked : fmt.excludeAsc;
+    const excludeDesc = isCustom ? document.getElementById('u-excludeDescenders').checked : fmt.excludeDesc;
+
+    let lowerPool = (isCustom ? uOptions.lower : fmt.hasLower) ? 'abcdefghijklmnopqrstuvwxyz' : '';
+    let upperPool = (isCustom ? uOptions.upper : fmt.hasUpper) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '';
+    
+    let numPool = '';
+    if (isCustom) {
+      numPool = [...new Set(customNumbers.replace(/[^0-9]/g, ''))].join('');
+    } else {
+      numPool = fmt.hasNum ? '0123456789' : '';
+    }
+
+    if (excludeAsc) lowerPool = lowerPool.replace(/[bdfhijklt]/g, '');
+    if (excludeDesc) lowerPool = lowerPool.replace(/[gjpqy]/g, '');
+
+    if (excludeChars !== '') {
+      for (let i = 0; i < excludeChars.length; i++) {
+        const c = excludeChars[i];
+        lowerPool = lowerPool.split(c.toLowerCase()).join('');
+        upperPool = upperPool.split(c.toUpperCase()).join('');
+        numPool = numPool.split(c).join('');
+      }
+    }
+    const masterPool = [...new Set(lowerPool + upperPool + numPool)].join('');
+    return { lower: lowerPool, upper: upperPool, num: numPool, master: masterPool };
+  }
+
+  function validateUsernameSettings(count, length, minChars, pools) {
+    if (isNaN(count) || count < 1 || count > 50) return 'Error: Number must be between 1 and 50.';
+    if (isNaN(length) || length < 6 || length > 50) return 'Error: Length must be between 6 and 50.';
+    if (isNaN(minChars) || minChars < 0 || minChars > 10) return 'Error: Min chars must be between 0 and 10.';
+    if (pools.master.length === 0) return 'Error: The character pool is empty. Check your exclusions.';
+
+    let activeTypes = 0;
+    if (pools.lower.length > 0) activeTypes++;
+    if (pools.upper.length > 0) activeTypes++;
+    if (pools.num.length > 0) activeTypes++;
+
+    if ((minChars * activeTypes) > length) return `Error: Minimum required (${minChars * activeTypes}) exceeds length (${length}).`;
+    if (uOptions.unique && length > pools.master.length) return `Error: Not enough unique characters for a ${length}-char username.`;
+    return null;
+  }
+
+  function buildPoolsPassword(fmt) {
+    const isCustom = !fmt;
+    const excludeChars = isCustom ? document.getElementById('p-exclude').value : '';
+    const excludeSimilar = isCustom ? document.getElementById('p-excludeSimilar').checked : fmt.excludeSimilar;
+
+    let lowerPool = (isCustom ? pOptions.lower : fmt.hasLower) ? 'abcdefghijklmnopqrstuvwxyz' : '';
+    let upperPool = (isCustom ? pOptions.upper : fmt.hasUpper) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '';
+    let numPool = (isCustom ? pOptions.numbers : fmt.hasNum) ? '0123456789' : '';
+    let symPool = (isCustom ? pOptions.symbols : !!fmt.symbols) ? (fmt ? fmt.symbols : SYMBOLS) : '';
+
+    if (excludeSimilar) {
+      for (const c of SIMILAR_SET) {
+        lowerPool = lowerPool.split(c).join(''); upperPool = upperPool.split(c).join('');
+        numPool = numPool.split(c).join(''); symPool = symPool.split(c).join('');
+      }
+    }
+    if (excludeChars !== '') {
+      for (let i = 0; i < excludeChars.length; i++) {
+        const c = excludeChars[i];
+        lowerPool = lowerPool.split(c.toLowerCase()).join(''); upperPool = upperPool.split(c.toUpperCase()).join('');
+        numPool = numPool.split(c).join(''); symPool = symPool.split(c).join('');
+      }
+    }
+    const masterPool = [...new Set(lowerPool + upperPool + numPool + symPool)].join('');
+    return { lower: lowerPool, upper: upperPool, num: numPool, sym: symPool, master: masterPool };
+  }
+
+  function validatePasswordSettings(count, length, pools) {
+    if (isNaN(count) || count < 1 || count > 50) return 'Error: Number must be between 1 and 50.';
+    if (isNaN(length) || length < 8 || length > 50) return 'Error: Length must be between 8 and 50.';
+    if (pools.master.length === 0) return 'Error: The character pool is empty. Enable at least one type.';
+    return null;
+  }
+
+  function avoidRiskyLeadingChar(arr) {
+    const isRisky = c => RISKY_LEADING.indexOf(c) !== -1;
+    if (arr.every(isRisky)) return arr;
+    for (let i = 0; i < 1000 && isRisky(arr[0]); i++) secureShuffle(arr);
+    if (isRisky(arr[0])) {
+      const safe = [];
+      arr.forEach((c, i) => { if (!isRisky(c)) safe.push(i); });
+      const j = safe[secureRandomInt(safe.length)];
+      [arr[0], arr[j]] = [arr[j], arr[0]];
+    }
+    return arr;
+  }
+
+  function generateSingleUsername(pools, length, minChars, isUnique) {
+    const masterPool = pools.master, guaranteedChars = [], availablePool = masterPool.split('');
+    let hasWarning = false;
+    if (minChars > 0) {
+      const activePools = [];
+      if (pools.lower.length > 0) activePools.push(pools.lower);
+      if (pools.upper.length > 0) activePools.push(pools.upper);
+      if (pools.num.length > 0) activePools.push(pools.num);
+
+      for (const pool of activePools) {
+        let actualMin = minChars;
+        if (minChars > pool.length) { actualMin = pool.length; hasWarning = true; }
+        const poolArray = pool.split('');
+        if (isUnique) {
+          secureShuffle(poolArray);
+          const picked = poolArray.slice(0, actualMin);
+          guaranteedChars.push(...picked);
+          picked.forEach(c => { const idx = availablePool.indexOf(c); if (idx > -1) availablePool.splice(idx, 1); });
+        } else {
+          for (let k = 0; k < actualMin; k++) guaranteedChars.push(getRandomChar(pool));
+        }
+      }
+    }
+    const remainingLength = length - guaranteedChars.length;
+    let usernameArray = [...guaranteedChars];
+    if (remainingLength > 0) {
+      if (isUnique) { secureShuffle(availablePool); usernameArray = usernameArray.concat(availablePool.slice(0, remainingLength)); }
+      else { for (let j = 0; j < remainingLength; j++) usernameArray.push(getRandomChar(masterPool)); }
+    }
+    secureShuffle(usernameArray);
+    return { username: usernameArray.join(''), hasWarning };
+  }
+
+  function generateSinglePassword(pools, length, requireEach, skipRiskyGuard) {
+    const guaranteed = [];
+    let hasWarning = false;
+    if (requireEach) {
+      const activePools = [];
+      if (pools.lower.length > 0) activePools.push(pools.lower);
+      if (pools.upper.length > 0) activePools.push(pools.upper);
+      if (pools.num.length > 0) activePools.push(pools.num);
+      if (pools.sym.length > 0) activePools.push(pools.sym);
+      if (length < activePools.length) { hasWarning = true; }
+      else { for (const pool of activePools) guaranteed.push(getRandomChar(pool)); }
+    }
+    const remaining = length - guaranteed.length;
+    const passwordArray = [...guaranteed];
+    for (let i = 0; i < remaining; i++) passwordArray.push(getRandomChar(pools.master));
+    secureShuffle(passwordArray);
+    if (!skipRiskyGuard) avoidRiskyLeadingChar(passwordArray);
+    return { password: passwordArray.join(''), hasWarning };
+  }
+
+  function ratingForUsername(length, poolSize) {
+    const entropy = calculateEntropy(length, poolSize);
+    if (entropy > 70) return 'epic';
+    if (entropy > 40) return 'amazing';
+    return 'cool';
+  }
+
+  function ratingForPassword(length, poolSize) {
+    const entropy = calculateEntropy(length, poolSize);
+    if (entropy >= 100) return 'very';
+    if (entropy >= 70) return 'strong';
+    if (entropy >= 50) return 'fair';
+    return 'weak';
+  }
+
+  function updateFilterVisibility() {
+    const container = document.getElementById('f-filter-container');
+    const changedBtn = document.getElementById('f-changed-only-btn');
+
+    if (fuseResults.length > 0) {
+      container.style.display = 'flex';
+    } else {
+      container.style.display = 'none';
+    }
+
+    if (isUpdateModeActive) {
+      changedBtn.style.display = 'flex';
+    } else {
+      changedBtn.style.display = 'none';
+    }
+  }
+
+  function updateBackupUI() {
+    const backupActions = document.getElementById('f-backup-actions');
+    if (backupActions) backupActions.style.display = (!isUpdateModeActive && fuseResults.length > 0) ? 'block' : 'none';
+  }
+
+  function updateBatchButtonsState() {
+    const filterInput = document.getElementById('f-filter-input');
+    const isFiltered = filterInput.value.trim() !== '';
+    const btns = [
+      document.getElementById('f-btn-generate'),
+      document.querySelector('[data-action="copy-all"][data-tab="fuse"]'),
+      document.querySelector('[data-action="export"][data-tab="fuse"]'),
+      document.querySelector('[data-action="export-txt"][data-tab="fuse"]'),
+      document.querySelector('[data-action="print"][data-tab="fuse"]')
+    ];
+
+    btns.forEach(btn => {
+      if (btn) {
+        if (isFiltered) {
+          btn.setAttribute('disabled', 'disabled');
+        } else {
+          btn.removeAttribute('disabled');
+        }
+      }
+    });
+  }
+
+  function parseFilterTerms(query, fuseCount) {
+    const parts = query.split(',').map(s => s.trim()).filter(Boolean);
+    const indexTerms = [];
+    const textTerms = [];
+
+    for (const part of parts) {
+      if (/^\d+$/.test(part)) {
+        const val = parseInt(part, 10);
+        if (val >= 1 && val <= fuseCount) {
+          indexTerms.push(val);
+        } else {
+          textTerms.push(part.toLowerCase());
+        }
+      } else {
+        textTerms.push(part.toLowerCase());
+      }
+    }
+
+    return { indexTerms, textTerms };
+  }
+
+  function renderResults(type) {
+    const list = document.getElementById(type === 'username' ? 'u-list' : type === 'password' ? 'p-list' : 'f-list');
+    list.innerHTML = '';
+
+    if (type === 'fuse') {
+      const q = currentFilterText.trim();
+      let hasFilter = false;
+      let indexTerms = [];
+      let textTerms = [];
+
+      if (q !== '') {
+        const parsed = parseFilterTerms(q, fuseResults.length);
+        indexTerms = parsed.indexTerms;
+        textTerms = parsed.textTerms;
+        hasFilter = (indexTerms.length > 0 || textTerms.length > 0);
+      }
+
+      const filteredResults = [];
+      fuseResults.forEach((res, index) => {
+        let match = true;
+
+        if (hasFilter) {
+          const indexMatch = indexTerms.includes(index + 1);
+          let textMatch = false;
+          if (textTerms.length > 0) {
+            const textToSearch = [
+              res.appName, res.firstName, res.lastName, res.email, res.phone, res.username
+            ].filter(Boolean).join(' ').toLowerCase();
+            textMatch = textTerms.some(term => textToSearch.includes(term));
+          }
+          match = indexMatch || textMatch;
+        }
+
+        if (match && isChangedOnly) {
+          const hasChanges = changedFuse.metadata.has(index) || changedFuse.username.has(index) || changedFuse.password.has(index);
+          match = hasChanges;
+        }
+
+        if (match) {
+          filteredResults.push({ res, originalIndex: index });
+        }
+      });
+
+      filteredResults.forEach(({ res, originalIndex }) => {
+        const card = document.createElement('div');
+        card.className = 'fuse-card';
+
+        const slidersSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>`;
+        const copySvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+        const refreshSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>`;
+        const trashSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+
+        const showEditMetadata = isUpdateModeActive && !res._lockMeta;
+        const showEditEmail = isUpdateModeActive && !res._lockEmail;
+        const showEditPhone = isUpdateModeActive && !res._lockPhone;
+        const showEditUsername = isUpdateModeActive && !res._lockUser;
+        const showEditPassword = isUpdateModeActive && !res._lockPass;
+        const showDelete = isUpdateModeActive;
+
+        const emailRow = (res.email || showEditEmail) ? `
+          <div class="fuse-row">
+            <span class="fuse-row-label">Email:</span>
+            <span class="fuse-row-value text-email"></span>
+            ${res.email ? `<button type="button" class="icon-btn no-print" data-action="copy-email" title="Copy Email" aria-label="Copy Email">${copySvg}</button>` : ''}
+            ${showEditEmail ? `<button type="button" class="icon-btn no-print" data-action="edit-email" title="Edit Email" aria-label="Edit Email">${slidersSvg}</button>` : ''}
+          </div>` : '';
+
+        const phoneRow = (res.phone || showEditPhone) ? `
+          <div class="fuse-row">
+            <span class="fuse-row-label">Phone:</span>
+            <span class="fuse-row-value text-phone"></span>
+            ${res.phone ? `<button type="button" class="icon-btn no-print" data-action="copy-phone" title="Copy Phone" aria-label="Copy Phone">${copySvg}</button>` : ''}
+            ${showEditPhone ? `<button type="button" class="icon-btn no-print" data-action="edit-phone" title="Edit Phone" aria-label="Edit Phone">${slidersSvg}</button>` : ''}
+          </div>` : '';
+
+        const displayName = [res.firstName, res.lastName].filter(Boolean).join(' ');
+        const fuseTitle = displayName ? `${escapeHTML(res.appName)} - ${escapeHTML(displayName)}` : escapeHTML(res.appName);
+
+        let badgeHtml = '';
+        if (isUpdateModeActive && (changedFuse.metadata.has(originalIndex) || changedFuse.username.has(originalIndex) || changedFuse.password.has(originalIndex))) {
+          const dots = [];
+          if (changedFuse.metadata.has(originalIndex)) dots.push('<span class="mac-dot dot-m" title="Metadata changed"></span>');
+          if (changedFuse.username.has(originalIndex)) dots.push('<span class="mac-dot dot-u" title="Username changed"></span>');
+          if (changedFuse.password.has(originalIndex)) dots.push('<span class="mac-dot dot-p" title="Password changed"></span>');
+          badgeHtml = '<span class="fuse-badges">' + dots.join('') + '</span>';
+        }
+
+        const headerHtml = `
+          <div class="fuse-name" style="justify-content: flex-start; gap: 0;">
+            <div style="display:flex; align-items:center; overflow:hidden; flex: 1; min-width: 0; margin-right: 4px;">
+              <span class="fuse-index">${originalIndex + 1}.</span>
+              <span class="fuse-name-text" style="flex: 0 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${fuseTitle}</span>
+            </div>
+            <div class="fuse-header-actions" style="margin-left: auto; display:flex; align-items:center; gap:10px; flex-shrink:0;">
+              ${badgeHtml}
+              ${showDelete ? `<button type="button" class="icon-btn no-print" data-action="delete-fuse" title="Delete Credential" aria-label="Delete Credential">${trashSvg}</button>` : ''}
+              ${showEditMetadata ? `<button type="button" class="icon-btn no-print" data-action="edit-metadata" title="Edit Metadata" aria-label="Edit Metadata">${slidersSvg}</button>` : ''}
+            </div>
+          </div>`;
+
+        const showRefreshU = res.username && (!isUpdateModeActive || (res.uFormat && !res._lockUser));
+        const showRefreshP = res.password && (!isUpdateModeActive || (res.pFormat && !res._lockPass));
+
+        const usernameRow = (res.username || showEditUsername) ? `
+          <div class="fuse-row">
+            <span class="fuse-row-label">Username:</span>
+            <span class="fuse-row-value text-u"></span>
+            ${showRefreshU ? `<button type="button" class="icon-btn no-print" data-action="refresh-u" title="Regenerate Username" aria-label="Regenerate Username">${refreshSvg}</button>` : ''}
+            ${res.username ? `<button type="button" class="icon-btn no-print" data-action="copy-u" title="Copy Username" aria-label="Copy Username">${copySvg}</button>` : ''}
+            ${showEditUsername ? `<button type="button" class="icon-btn no-print" data-action="edit-username" title="Edit Username" aria-label="Edit Username">${slidersSvg}</button>` : ''}
+          </div>` : '';
+
+        const passwordRow = (res.password || showEditPassword) ? `
+          <div class="fuse-row" style="margin-bottom:0;">
+            <span class="fuse-row-label">Password:</span>
+            <span class="fuse-row-value text-p"></span>
+            ${showRefreshP ? `<button type="button" class="icon-btn no-print" data-action="refresh-p" title="Regenerate Password" aria-label="Regenerate Password">${refreshSvg}</button>` : ''}
+            ${res.password ? `<button type="button" class="icon-btn no-print" data-action="copy-p" title="Copy Password" aria-label="Copy Password">${copySvg}</button>` : ''}
+            ${showEditPassword ? `<button type="button" class="icon-btn no-print" data-action="edit-password" title="Edit Password" aria-label="Edit Password">${slidersSvg}</button>` : ''}
+          </div>` : '';
+
+        card.innerHTML = `
+          ${headerHtml}
+          ${emailRow}
+          ${phoneRow}
+          ${usernameRow}
+          ${passwordRow}
+        `;
+
+        if (res.email) {
+          card.querySelector('.text-email').textContent = res.email;
+          const cpE = card.querySelector('[data-action="copy-email"]');
+          if (cpE) cpE.addEventListener('click', function () {
+            const btn = this;
+            copyTextToClipboard(card.querySelector('.text-email').textContent).then(ok => { if (ok) animateToCheckmark(btn); });
+          });
+        }
+        if (res.phone) {
+          card.querySelector('.text-phone').textContent = res.phone;
+          const cpPh = card.querySelector('[data-action="copy-phone"]');
+          if (cpPh) cpPh.addEventListener('click', function () {
+            const btn = this;
+            copyTextToClipboard(card.querySelector('.text-phone').textContent).then(ok => { if (ok) animateToCheckmark(btn); });
+          });
+        }
+
+        if (isUpdateModeActive) {
+          const editMeta = card.querySelector('[data-action="edit-metadata"]');
+          if (editMeta) editMeta.addEventListener('click', function () { openEditModal('metadata', originalIndex); });
+          const editE = card.querySelector('[data-action="edit-email"]');
+          if (editE) editE.addEventListener('click', function () { openEditModal('email', originalIndex); });
+          const editP = card.querySelector('[data-action="edit-phone"]');
+          if (editP) editP.addEventListener('click', function () { openEditModal('phone', originalIndex); });
+          const editU = card.querySelector('[data-action="edit-username"]');
+          if (editU) editU.addEventListener('click', function () { openEditModal('username', originalIndex); });
+          const editPw = card.querySelector('[data-action="edit-password"]');
+          if (editPw) editPw.addEventListener('click', function () { openEditModal('password', originalIndex); });
+          const delBtn = card.querySelector('[data-action="delete-fuse"]');
+          if (delBtn) delBtn.addEventListener('click', async function () {
+            const fuseName = res.appName || 'this credential';
+            const confirmed = await showConfirm('Delete fused credential #' + (originalIndex + 1) + ' (' + fuseName + ')? This cannot be undone.');
+            if (!confirmed) return;
+            deleteFuseEntry(originalIndex);
+          });
+        }
+
+        if (res.username) {
+          card.querySelector('.text-u').textContent = res.username;
+          const cpU = card.querySelector('[data-action="copy-u"]');
+          if (cpU) cpU.addEventListener('click', function () {
+            const btn = this;
+            copyTextToClipboard(card.querySelector('.text-u').textContent).then(ok => {
+              if (ok) animateToCheckmark(btn);
+            });
+          });
+          const refU = card.querySelector('[data-action="refresh-u"]');
+          if (refU) refU.addEventListener('click', function () { refreshFuseComponent('username', originalIndex, card, this); });
+        }
+
+        if (res.password) {
+          card.querySelector('.text-p').textContent = res.password;
+          const refP = card.querySelector('[data-action="refresh-p"]');
+          if (refP) refP.addEventListener('click', function () { refreshFuseComponent('password', originalIndex, card, this); });
+          const cpP = card.querySelector('[data-action="copy-p"]');
+          if (cpP) cpP.addEventListener('click', function () {
+            const btn = this;
+            copyTextToClipboard(card.querySelector('.text-p').textContent).then(ok => {
+              if (ok) animateToCheckmark(btn);
+            });
+          });
+        }
+
+        list.appendChild(card);
+      });
+    } else {
+      const results = type === 'username' ? usernameResults : passwordResults;
+      results.forEach((res, index) => {
+        const card = document.createElement('div');
+        card.className = 'password-card';
+        card.dataset.value = res.value;
+        card.dataset.index = index;
+
+        let ratingKey = VALID_RATINGS[res.ratingKey] ? res.ratingKey : (type === 'username' ? 'cool' : 'fair');
+        let ratingLabel = '';
+        if (type === 'username') ratingLabel = ratingKey === 'epic' ? 'Epic' : ratingKey === 'amazing' ? 'Amazing' : 'Cool';
+        else ratingLabel = ratingKey === 'very' ? 'Very Strong' : ratingKey === 'strong' ? 'Strong' : ratingKey === 'fair' ? 'Fair' : 'Weak';
+
+        card.innerHTML = `
+          <div class="password-text-container">
+            <button type="button" class="icon-btn no-print" data-action="refresh" title="Regenerate" aria-label="Regenerate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></button>
+            <span class="password-text"></span>
+            <button type="button" class="icon-btn no-print" data-action="copy" title="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          </div>
+          <div class="strength-bar-container no-print"><div class="strength-bar" data-rating="${ratingKey}"></div></div>
+          <div class="strength-text no-print" data-rating="${ratingKey}">${ratingLabel}</div>
+        `;
+
+        card.querySelector('.password-text').textContent = res.value;
+        card.querySelector('[data-action="refresh"]').addEventListener('click', function () { refreshSingle(type, this, index); });
+        card.querySelector('[data-action="copy"]').addEventListener('click', function () {
+          const btn = this;
+          const currentCard = btn.closest('.password-card');
+          copyTextToClipboard(currentCard.dataset.value).then(ok => {
+            if (ok) animateToCheckmark(btn);
+          });
+        });
+
+        list.appendChild(card);
+      });
+    }
+
+    const actionsDiv = document.getElementById(type === 'username' ? 'u-actionButtons' : type === 'password' ? 'p-actionButtons' : 'f-actionButtons');
+    actionsDiv.classList.toggle('show', (type === 'fuse' ? fuseResults.length > 0 : (type === 'username' ? usernameResults.length > 0 : passwordResults.length > 0)));
+
+    if (type === 'fuse') {
+       updateBatchButtonsState();
+       updateFilterVisibility();
+       updateBackupUI();
+    }
+  }
+
+  function animateToCheckmark(btn) {
+    if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+    if (btn.dataset.timeoutId) clearTimeout(parseInt(btn.dataset.timeoutId, 10));
+    btn.innerHTML = '<svg class="icon-checkmark" viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    const tid = setTimeout(() => { btn.innerHTML = btn.dataset.originalHtml; delete btn.dataset.timeoutId; delete btn.dataset.originalHtml; }, 1000);
+    btn.dataset.timeoutId = tid;
+  }
+
+  async function triggerGenerate(type) {
+    try {
+      if (type === 'username') generateUsernames();
+      else if (type === 'password') generatePasswords();
+      else await generateFuse();
+    } catch (e) {
+      console.error(e);
+      setStatus(type, 'Error: ' + (e.message || 'Generation failed.'), 'error');
+    }
+  }
+
+  function generateUsernames() {
+    enforceLimits('u-minChars'); enforceLimits('u-count'); enforceLimits('u-length');
+
+    const minChars = parseInt(document.getElementById('u-minChars').value, 10);
+    const count = parseInt(document.getElementById('u-count').value, 10);
+    const length = parseInt(document.getElementById('u-length').value, 10);
+    const pools = buildPoolsUsername();
+    const err = validateUsernameSettings(count, length, minChars, pools);
+
+    if (err) return;
+
+    const list = document.getElementById('u-list'); list.innerHTML = '';
+
+    const ratingKey = ratingForUsername(length, pools.master.length);
+    usernameResults = [];
+    const seen = new Set();
+
+    for (let i = 0; i < count; i++) {
+      let attempts = 0, result;
+      do { result = generateSingleUsername(pools, length, minChars, uOptions.unique); attempts++; }
+      while (seen.has(result.username) && attempts < MAX_DUPLICATE_ATTEMPTS);
+      seen.add(result.username);
+      usernameResults.push({ value: result.username, ratingKey });
+    }
+    renderResults('username');
+    refreshIdleProtection();
+  }
+
+  function generatePasswords() {
+    enforceLimits('p-count'); enforceLimits('p-length');
+
+    const count = parseInt(document.getElementById('p-count').value, 10);
+    const length = parseInt(document.getElementById('p-length').value, 10);
+    const requireEach = document.getElementById('p-requireEach').checked;
+    const pools = buildPoolsPassword();
+    const err = validatePasswordSettings(count, length, pools);
+
+    if (err) return;
+
+    const list = document.getElementById('p-list'); list.innerHTML = '';
+
+    const ratingKey = ratingForPassword(length, pools.master.length);
+    passwordResults = [];
+    const seen = new Set();
+
+    for (let i = 0; i < count; i++) {
+      let attempts = 0, result;
+      do { result = generateSinglePassword(pools, length, requireEach); attempts++; }
+      while (seen.has(result.password) && attempts < MAX_DUPLICATE_ATTEMPTS);
+      seen.add(result.password);
+      passwordResults.push({ value: result.password, ratingKey });
+    }
+    renderResults('password');
+    refreshIdleProtection();
+  }
+
+  async function generateFuse() {
+    if (isUpdateModeActive) {
+      const hasRegeneratable = fuseResults.some(item => item.uFormat || item.pFormat);
+      if (hasRegeneratable) {
+        const confirmed = await showConfirm('Generate new credentials? Existing fused credentials on screen will be replaced.');
+        if (!confirmed) return;
+      }
+      batchUpdate();
+      return;
+    }
+
+    currentFilterText = '';
+    isChangedOnly = false;
+    document.getElementById('f-filter-input').value = '';
+    document.getElementById('f-changed-only-btn').classList.remove('primary');
+
+    const appNameInput = document.getElementById('f-appName');
+    const rawAppName = appNameInput.value.trim();
+    if (rawAppName === '') {
+      appNameInput.classList.add('invalid');
+      return;
+    }
+    appNameInput.classList.remove('invalid');
+
+    const emailInput = document.getElementById('f-email');
+    const email = emailInput.value.trim();
+    if (email !== '' && !EMAIL_REGEX.test(email)) {
+      emailInput.classList.add('invalid');
+      return;
+    }
+    emailInput.classList.remove('invalid');
+
+    const source = getFuseSource();
+
+    if (source === 'existing') {
+      if (usernameResults.length === 0 || passwordResults.length === 0) return;
+    } else {
+      enforceLimits('f-count');
+      const useManual = document.getElementById('f-use-manual').checked;
+      const noUsername = document.getElementById('f-no-username').checked;
+      const noPassword = document.getElementById('f-no-password').checked;
+      if (useManual && !noUsername) {
+        const mInput = document.getElementById('f-manualUsername');
+        if (mInput.value.trim() === '') {
+          mInput.classList.add('invalid');
+          return;
+        }
+        mInput.classList.remove('invalid');
+      }
+
+      if (!noUsername && !useManual) {
+        const uMinChars = parseInt(document.getElementById('u-minChars').value, 10);
+        const uLength = parseInt(document.getElementById('u-length').value, 10);
+        const uPools = buildPoolsUsername();
+        const uErr = validateUsernameSettings(1, uLength, uMinChars, uPools);
+        if (uErr) return;
+      }
+      if (!noPassword) {
+        const pLength = parseInt(document.getElementById('p-length').value, 10);
+        const pRequireEach = document.getElementById('p-requireEach').checked;
+        const pPools = buildPoolsPassword();
+        const pErr = validatePasswordSettings(1, pLength, pPools);
+        if (pErr) return;
+      }
+    }
+
+    const list = document.getElementById('f-list'); list.innerHTML = '';
+    fuseResults = [];
+    document.getElementById('f-actionButtons').classList.remove('show');
+
+    const appName = normalizePlatformName(rawAppName);
+    const firstName = formatPersonName(sanitizeName(document.getElementById('f-firstName').value));
+    const lastName = formatPersonName(sanitizeName(document.getElementById('f-lastName').value));
+    const phone = sanitizePhone(document.getElementById('f-telephone').value).trim();
+
+    const currentUFormat = {
+      length: parseInt(document.getElementById('u-length').value, 10),
+      hasLower: uOptions.lower,
+      hasUpper: uOptions.upper,
+      hasNum: document.getElementById('u-customNumbers').value.trim().length > 0,
+      unique: uOptions.unique,
+      excludeAsc: document.getElementById('u-excludeAscenders').checked,
+      excludeDesc: document.getElementById('u-excludeDescenders').checked
+    };
+    const currentPFormat = {
+      length: parseInt(document.getElementById('p-length').value, 10),
+      hasLower: pOptions.lower,
+      hasUpper: pOptions.upper,
+      hasNum: pOptions.numbers,
+      symbols: pOptions.symbols ? SYMBOLS : '',
+      excludeSimilar: document.getElementById('p-excludeSimilar').checked,
+      requireEach: document.getElementById('p-requireEach').checked
+    };
+
+    if (source === 'existing') {
+      const maxCount = Math.min(usernameResults.length, passwordResults.length);
+      for (let i = 0; i < maxCount; i++) {
+        fuseResults.push({
+          appName, firstName, lastName, email, phone,
+          username: usernameResults[i].value,
+          usernameOpt: 'auto',
+          password: passwordResults[i].value,
+          passwordOpt: 'auto',
+          uFormat: currentUFormat,
+          pFormat: currentPFormat
+        });
+      }
+      renderResults('fuse');
+    } else {
+      const count = parseInt(document.getElementById('f-count').value, 10);
+      const useManual = document.getElementById('f-use-manual').checked;
+      const noUsername = document.getElementById('f-no-username').checked;
+      const noPassword = document.getElementById('f-no-password').checked;
+
+      let uOpt = 'auto';
+      if (noUsername) uOpt = 'none';
+      else if (useManual) uOpt = 'manual';
+
+      let manualU = '';
+      if (uOpt === 'manual') manualU = document.getElementById('f-manualUsername').value.trim();
+
+      const uMinChars = parseInt(document.getElementById('u-minChars').value, 10);
+      const uLength = parseInt(document.getElementById('u-length').value, 10);
+      const uPools = buildPoolsUsername();
+
+      const pLength = noPassword ? 0 : parseInt(document.getElementById('p-length').value, 10);
+      const pRequireEach = noPassword ? false : document.getElementById('p-requireEach').checked;
+      const pPools = noPassword ? null : buildPoolsPassword();
+
+      const seenU = new Set();
+      const seenP = new Set();
+
+      for (let i = 0; i < count; i++) {
+        let resU = { username: '' }, resP = { password: '' }, attemptsU = 0, attemptsP = 0;
+
+        if (uOpt === 'auto') {
+          do { resU = generateSingleUsername(uPools, uLength, uMinChars, uOptions.unique); attemptsU++; }
+          while (seenU.has(resU.username) && attemptsU < MAX_DUPLICATE_ATTEMPTS);
+          seenU.add(resU.username);
+        } else if (uOpt === 'manual') {
+          resU.username = manualU;
+        }
+
+        if (!noPassword) {
+          do { resP = generateSinglePassword(pPools, pLength, pRequireEach); attemptsP++; }
+          while (seenP.has(resP.password) && attemptsP < MAX_DUPLICATE_ATTEMPTS);
+          seenP.add(resP.password);
+        }
+
+        fuseResults.push({
+          appName, firstName, lastName, email, phone,
+          username: resU.username,
+          usernameOpt: uOpt,
+          password: resP.password,
+          passwordOpt: noPassword ? 'none' : 'auto',
+          uFormat: currentUFormat,
+          pFormat: currentPFormat
+        });
+      }
+      renderResults('fuse');
+    }
+    refreshIdleProtection();
+  }
+
+  function batchUpdate() {
+    if (!isUpdateModeActive || !currentUpdateMode) return;
+
+    const newU = [];
+    const newP = [];
+    const uChanged = [];
+    const pChanged = [];
+
+    fuseResults.forEach(function (fuseItem, idx) {
+      if (currentUpdateMode === 'password' || currentUpdateMode === 'both') {
+        if (fuseItem.pFormat && !fuseItem._lockPass) {
+          fuseItem.password = generateWithFormat(fuseItem.pFormat, false);
+          newP.push({ value: fuseItem.password, ratingKey: ratingForPassword(fuseItem.pFormat.length, poolSizeFromFormat(fuseItem.pFormat)) });
+          pChanged.push(idx);
+        }
+      }
+      if (currentUpdateMode === 'username' || currentUpdateMode === 'both') {
+        if (fuseItem.uFormat && !fuseItem._lockUser) {
+          fuseItem.username = generateWithFormat(fuseItem.uFormat, true);
+          newU.push({ value: fuseItem.username, ratingKey: ratingForUsername(fuseItem.uFormat.length, poolSizeFromFormat(fuseItem.uFormat)) });
+          uChanged.push(idx);
+        }
+      }
+    });
+
+    if (newU.length === 0 && newP.length === 0) return;
+
+    batchUpdateDone = true;
+    changedFuse.username.clear();
+    changedFuse.password.clear();
+    changedFuse.metadata.clear();
+
+    isChangedOnly = false;
+    document.getElementById('f-changed-only-btn').classList.remove('primary');
+
+    rebuildResultsFromFuse();
+    renderResults('username');
+    renderResults('password');
+    renderResults('fuse');
+
+    hasGeneratedUpdate = true;
+    refreshIdleProtection();
+    saveSettings();
+  }
+
+  function analyzeStringFormat(str, isUsername) {
+    let length = Array.from(str).length;
+    if (isUsername && length < 6) length = 6;
+    if (!isUsername && length < 8) length = 8;
+
+    const symbolMatches = (str.match(/[^a-zA-Z0-9]/gu) || []);
+    const uniqueSymbols = [...new Set(symbolMatches)].join('');
+
+    return {
+      length: length,
+      hasLower: /[a-z]/.test(str),
+      hasUpper: /[A-Z]/.test(str),
+      hasNum: /[0-9]/.test(str),
+      symbols: uniqueSymbols,
+      unique: true,
+      excludeAsc: false,
+      excludeDesc: false,
+      excludeSimilar: true,
+      requireEach: true
+    };
+  }
+
+  function normalizeImportedFormat(fmt, fallbackStr, isUsername) {
+    const minLen = isUsername ? 6 : 8;
+    const maxLen = 50;
+    const defaults = analyzeStringFormat(fallbackStr || '', isUsername);
+    if (!fmt || typeof fmt !== 'object' || Array.isArray(fmt)) return defaults;
+    const out = {
+      length: defaults.length,
+      hasLower: defaults.hasLower,
+      hasUpper: defaults.hasUpper,
+      hasNum: defaults.hasNum,
+      symbols: defaults.symbols,
+      unique: defaults.unique,
+      excludeAsc: defaults.excludeAsc,
+      excludeDesc: defaults.excludeDesc,
+      excludeSimilar: defaults.excludeSimilar,
+      requireEach: defaults.requireEach
+    };
+    if (Number.isInteger(fmt.length) && fmt.length >= minLen && fmt.length <= maxLen) out.length = fmt.length;
+    if (typeof fmt.hasLower === 'boolean') out.hasLower = fmt.hasLower;
+    if (typeof fmt.hasUpper === 'boolean') out.hasUpper = fmt.hasUpper;
+    if (typeof fmt.hasNum === 'boolean') out.hasNum = fmt.hasNum;
+    if (typeof fmt.unique === 'boolean') out.unique = fmt.unique;
+    if (typeof fmt.excludeAsc === 'boolean') out.excludeAsc = fmt.excludeAsc;
+    if (typeof fmt.excludeDesc === 'boolean') out.excludeDesc = fmt.excludeDesc;
+    if (typeof fmt.excludeSimilar === 'boolean') out.excludeSimilar = fmt.excludeSimilar;
+    if (typeof fmt.requireEach === 'boolean') out.requireEach = fmt.requireEach;
+    if (typeof fmt.symbols === 'string' && fmt.symbols.length <= maxLen) out.symbols = fmt.symbols;
+    return out;
+  }
+
+  function poolSizeFromFormat(format) {
+    let size = 0;
+    if (format.hasLower) size += 26;
+    if (format.hasUpper) size += 26;
+    if (format.hasNum) size += 10;
+    if (format.symbols) size += Array.from(format.symbols).length;
+    return Math.max(size, 1);
+  }
+
+  function generateWithFormat(format, isUsername) {
+    const pools = isUsername ? buildPoolsUsername(format) : buildPoolsPassword(format);
+    const master = pools.master;
+
+    if (!master) {
+      const fallbackPools = { lower: 'abcdefghijklmnopqrstuvwxyz', upper: '', num: '', sym: '', master: 'abcdefghijklmnopqrstuvwxyz' };
+      const r = generateSinglePassword(fallbackPools, format.length, false, true);
+      return r.password;
+    }
+
+    if (isUsername) {
+      const minChars = 0;
+      const isUnique = format.unique !== false;
+      const r = generateSingleUsername(pools, format.length, minChars, isUnique);
+      return r.username;
+    } else {
+      const requireEach = format.requireEach !== false;
+      const r = generateSinglePassword(pools, format.length, requireEach, false);
+      return r.password;
+    }
+  }
+
+  function doUpdate() {
+    try {
+      if (!updateState) return;
+
+      captureFormSnapshot();
+
+      const useMeta = document.getElementById('upd-metadata').checked;
+      const useEmail = document.getElementById('upd-email').checked;
+      const usePhone = document.getElementById('upd-telephone').checked;
+      const useUser = document.getElementById('upd-username').checked;
+      const usePass = document.getElementById('upd-password').checked;
+
+      changedFuse.username.clear();
+      changedFuse.password.clear();
+      changedFuse.metadata.clear();
+      batchUpdateDone = false;
+
+      const wasScreenEmpty = fuseResults.length === 0;
+      const maxCount = Math.max(fuseResults.length, updateState.fuse.length);
+      const newResults = [];
+
+      for (let i = 0; i < maxCount; i++) {
+        const oldFuse = fuseResults[i];
+        const newFuse = updateState.fuse[i];
+
+        if (!oldFuse) {
+          const base = { ...newFuse };
+          base.usernameOpt = !base.username ? 'none' : 'auto';
+          base.passwordOpt = !base.password ? 'none' : 'auto';
+          if (!base.uFormat && base.username) base.uFormat = analyzeStringFormat(base.username, true);
+          if (!base.pFormat && base.password) base.pFormat = analyzeStringFormat(base.password, false);
+          base._lockMeta = !useMeta;
+          base._lockEmail = !useEmail;
+          base._lockPhone = !usePhone;
+          base._lockUser = !useUser;
+          base._lockPass = !usePass;
+          newResults.push(base);
+
+          if (!wasScreenEmpty) {
+            changedFuse.metadata.add(i);
+            if (base.username) changedFuse.username.add(i);
+            if (base.password) changedFuse.password.add(i);
+          }
+          continue;
+        }
+        if (!newFuse) {
+          newResults.push(oldFuse);
+          continue;
+        }
+
+        const base = { ...oldFuse };
+        base._lockMeta = !useMeta;
+        base._lockEmail = !useEmail;
+        base._lockPhone = !usePhone;
+        base._lockUser = !useUser;
+        base._lockPass = !usePass;
+
+        if (useMeta && (base.appName !== newFuse.appName || base.firstName !== newFuse.firstName || base.lastName !== newFuse.lastName)) {
+          base.appName = newFuse.appName;
+          base.firstName = newFuse.firstName;
+          base.lastName = newFuse.lastName;
+          changedFuse.metadata.add(i);
+        }
+        if (useEmail && base.email !== newFuse.email) {
+          base.email = newFuse.email;
+          changedFuse.metadata.add(i);
+        }
+        if (usePhone && base.phone !== newFuse.phone) {
+          base.phone = newFuse.phone;
+          changedFuse.metadata.add(i);
+        }
+        if (useUser && base.username !== newFuse.username) {
+          base.username = newFuse.username;
+          base.usernameOpt = !newFuse.username ? 'none' : 'auto';
+          if (!base.uFormat && base.username) base.uFormat = analyzeStringFormat(base.username, true);
+          changedFuse.username.add(i);
+        }
+        if (usePass && base.password !== newFuse.password) {
+          base.password = newFuse.password;
+          base.passwordOpt = !newFuse.password ? 'none' : 'auto';
+          if (!base.pFormat && base.password) base.pFormat = analyzeStringFormat(base.password, false);
+          changedFuse.password.add(i);
+        }
+
+        newResults.push(base);
+      }
+
+      fuseResults = newResults;
+      currentUpdateMode = (useUser && usePass) ? 'both' : useUser ? 'username' : usePass ? 'password' : 'none';
+
+      rebuildResultsFromFuse();
+
+      lockUI();
+
+      document.getElementById('f-filter-input').value = '';
+      document.getElementById('f-changed-only-btn').classList.remove('primary');
+      currentFilterText = '';
+      isChangedOnly = false;
+
+      renderResults('username');
+      renderResults('password');
+      renderResults('fuse');
+
+      document.getElementById('backupModal').classList.remove('show');
+      document.getElementById('backupModal').setAttribute('aria-hidden', 'true');
+      switchTab('fuse');
+
+      hasGeneratedUpdate = changedFuse.username.size > 0 || changedFuse.password.size > 0 || changedFuse.metadata.size > 0;
+
+      refreshIdleProtection();
+      saveSettings();
+    } catch (e) {
+      console.error(e);
+      setStatus('fuse', 'Error during update: ' + e.message, 'error');
+    }
+  }
+
+  function refreshSingle(type, btn, index) {
+    if (type === 'username') {
+      const minChars = parseInt(document.getElementById('u-minChars').value, 10);
+      const length = parseInt(document.getElementById('u-length').value, 10);
+      const pools = buildPoolsUsername();
+      const err = validateUsernameSettings(1, length, minChars, pools);
+      if (err) return;
+
+      let attempts = 0, r;
+      do { r = generateSingleUsername(pools, length, minChars, uOptions.unique); attempts++; }
+      while (usernameResults.some((res, i) => i !== index && res.value === r.username) && attempts < MAX_DUPLICATE_ATTEMPTS);
+
+      const ratingKey = ratingForUsername(length, pools.master.length);
+      const oldValue = usernameResults[index].value;
+      usernameResults[index] = { value: r.username, ratingKey };
+
+      if (fuseResults[index] && fuseResults[index].username === oldValue) {
+        fuseResults[index].username = r.username;
+      }
+
+      const card = btn.closest('.password-card');
+      card.dataset.value = r.username;
+      card.querySelector('.password-text').textContent = r.username;
+      const bar = card.querySelector('.strength-bar'); bar.dataset.rating = ratingKey;
+      const st = card.querySelector('.strength-text'); st.dataset.rating = ratingKey;
+      st.textContent = ratingKey === 'epic' ? 'Epic' : ratingKey === 'amazing' ? 'Amazing' : 'Cool';
+
+      animateToCheckmark(btn);
+
+    } else if (type === 'password') {
+      const length = parseInt(document.getElementById('p-length').value, 10);
+      const requireEach = document.getElementById('p-requireEach').checked;
+      const pools = buildPoolsPassword();
+      const err = validatePasswordSettings(1, length, pools);
+      if (err) return;
+
+      let attempts = 0, r;
+      do { r = generateSinglePassword(pools, length, requireEach); attempts++; }
+      while (passwordResults.some((res, i) => i !== index && res.value === r.password) && attempts < MAX_DUPLICATE_ATTEMPTS);
+
+      const ratingKey = ratingForPassword(length, pools.master.length);
+      const oldValue = passwordResults[index].value;
+      passwordResults[index] = { value: r.password, ratingKey };
+
+      if (fuseResults[index] && fuseResults[index].password === oldValue) {
+        fuseResults[index].password = r.password;
+      }
+
+      const card = btn.closest('.password-card');
+      card.dataset.value = r.password;
+      card.querySelector('.password-text').textContent = r.password;
+      const bar = card.querySelector('.strength-bar'); bar.dataset.rating = ratingKey;
+      const st = card.querySelector('.strength-text'); st.dataset.rating = ratingKey;
+      st.textContent = ratingKey === 'very' ? 'Very Strong' : ratingKey === 'strong' ? 'Strong' : ratingKey === 'fair' ? 'Fair' : 'Weak';
+
+      animateToCheckmark(btn);
+    }
+  }
+
+  function refreshFuseComponent(type, index, cardElement, btnElement) {
+    try {
+      if (isUpdateModeActive) {
+        const fuseItem = fuseResults[index];
+        if (type === 'username' && fuseItem._lockUser) return;
+        if (type === 'password' && fuseItem._lockPass) return;
+
+        if (type === 'username' && fuseItem.uFormat) {
+          fuseItem.username = generateWithFormat(fuseItem.uFormat, true);
+          cardElement.querySelector('.text-u').textContent = fuseItem.username;
+          changedFuse.username.add(index);
+        } else if (type === 'password' && fuseItem.pFormat) {
+          fuseItem.password = generateWithFormat(fuseItem.pFormat, false);
+          cardElement.querySelector('.text-p').textContent = fuseItem.password;
+          changedFuse.password.add(index);
+        } else {
+          return;
+        }
+
+        rebuildResultsFromFuse();
+        renderResults('username');
+        renderResults('password');
+
+        const actionsContainer = cardElement.querySelector('.fuse-header-actions');
+        if (actionsContainer) {
+          actionsContainer.querySelectorAll('.fuse-badges').forEach(b => b.remove());
+          const dots = [];
+          if (changedFuse.metadata.has(index)) dots.push('<span class="mac-dot dot-m" title="Metadata changed"></span>');
+          if (changedFuse.username.has(index)) dots.push('<span class="mac-dot dot-u" title="Username changed"></span>');
+          if (changedFuse.password.has(index)) dots.push('<span class="mac-dot dot-p" title="Password changed"></span>');
+          if (dots.length) actionsContainer.insertAdjacentHTML('afterbegin', '<span class="fuse-badges">' + dots.join('') + '</span>');
+        }
+
+        animateToCheckmark(btnElement);
+        hasGeneratedUpdate = true;
+        saveSettings();
+        return;
+      }
+
+      if (type === 'username') {
+        const minChars = parseInt(document.getElementById('u-minChars').value, 10);
+        const length = parseInt(document.getElementById('u-length').value, 10);
+        const pools = buildPoolsUsername();
+        const err = validateUsernameSettings(1, length, minChars, pools);
+        if (err) return;
+
+        let r, attempts = 0;
+        do { r = generateSingleUsername(pools, length, minChars, uOptions.unique); attempts++; }
+        while (fuseResults.some((res, i) => i !== index && res.username === r.username) && attempts < MAX_DUPLICATE_ATTEMPTS);
+
+        fuseResults[index].username = r.username;
+        cardElement.querySelector('.text-u').textContent = r.username;
+
+      } else {
+        const length = parseInt(document.getElementById('p-length').value, 10);
+        const requireEach = document.getElementById('p-requireEach').checked;
+        const pools = buildPoolsPassword();
+        const err = validatePasswordSettings(1, length, pools);
+        if (err) return;
+
+        let r, attempts = 0;
+        do { r = generateSinglePassword(pools, length, requireEach); attempts++; }
+        while (fuseResults.some((res, i) => i !== index && res.password === r.password) && attempts < MAX_DUPLICATE_ATTEMPTS);
+
+        fuseResults[index].password = r.password;
+        cardElement.querySelector('.text-p').textContent = r.password;
+      }
+      animateToCheckmark(btnElement);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function copyTextToClipboard(text) {
+    const scheduleClear = function () {
+      clearTimeout(clipboardClearTimer);
+      clipboardClearTimer = setTimeout(function () {
+        overwriteClipboard().then(function (ok) { if (ok) clipboardHoldsCredential = false; });
+      }, CLIPBOARD_AUTO_CLEAR_MS);
+    };
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); }
+      catch (err) { ok = false; }
+      document.body.removeChild(ta);
+      if (ok) { clipboardHoldsCredential = true; scheduleClear(); }
+      else setStatus(activeTab, 'Failed to copy.', 'error');
+      return ok;
+    };
+    if (!navigator.clipboard) return Promise.resolve(fallback());
+    return navigator.clipboard.writeText(text).then(
+      () => { clipboardHoldsCredential = true; scheduleClear(); return true; },
+      () => fallback()
+    );
+  }
+
+  function downloadFile(content, filename, mimeType) {
+    try {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+      return true;
+    } catch (err) {
+      console.error('Download failed', err);
+      setStatus(activeTab, 'Failed to download file.', 'error');
+      return false;
+    }
+  }
+
+  function getTimestamp() {
+    const now = new Date();
+    return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function exportData(type, format) {
+    const ts = getTimestamp();
+    let title = '';
+    let prefix = 'HijiForge';
+
+    let csv = '';
+    let txt = '';
+
+    if (type === 'username') {
+      if (usernameResults.length === 0) return;
+      title = 'Usernames';
+      const single = usernameResults.length === 1;
+      csv = single ? "Username\n" : "No,Username\n";
+      txt = `--- HijiForge ${title} ---\n\n`;
+      usernameResults.forEach((r, i) => {
+        csv += single ? `"${csvEscape(r.value, true)}"\n` : `${i + 1},"${csvEscape(r.value, true)}"\n`;
+        txt += single ? `${r.value}\n` : `${i + 1}. ${r.value}\n`;
+      });
+    } else if (type === 'password') {
+      if (passwordResults.length === 0) return;
+      title = 'Passwords';
+      const single = passwordResults.length === 1;
+      csv = single ? "Password\n" : "No,Password\n";
+      txt = `--- HijiForge ${title} ---\n\n`;
+      passwordResults.forEach((r, i) => {
+        csv += single ? `"${csvEscape(r.value, true)}"\n` : `${i + 1},"${csvEscape(r.value, true)}"\n`;
+        txt += single ? `${r.value}\n` : `${i + 1}. ${r.value}\n`;
+      });
+    } else {
+      if (fuseResults.length === 0) return;
+      title = 'Fuse';
+      const single = fuseResults.length === 1;
+      const hasAnyUsername = fuseResults.some(function (r) { return r.username; });
+      const hasAnyPassword = fuseResults.some(function (r) { return r.password; });
+
+      const headerBase = ['Platform Name', 'First Name', 'Last Name', 'Email', 'Telephone'];
+      if (hasAnyUsername) headerBase.push('Username');
+      if (hasAnyPassword) headerBase.push('Password');
+      csv = (single ? '' : 'No,') + headerBase.join(',') + '\n';
+      txt = '--- HijiForge Fuse ---\n\n';
+
+      fuseResults.forEach(function (r, i) {
+        const name = [r.firstName, r.lastName].filter(Boolean).join(' ');
+        const cells = [
+          '"' + csvEscape(r.appName, true) + '"',
+          '"' + csvEscape(r.firstName, true) + '"',
+          '"' + csvEscape(r.lastName, true) + '"',
+          '"' + csvEscape(r.email, true) + '"',
+          '"' + csvEscape(r.phone, true) + '"'
+        ];
+        if (hasAnyUsername) cells.push('"' + csvEscape(r.username, true) + '"');
+        if (hasAnyPassword) cells.push('"' + csvEscape(r.password, true) + '"');
+        const row = cells.join(',') + '\n';
+        csv += single ? row : (i + 1) + ',' + row;
+
+        txt += single ? (r.appName + '\n') : ('[' + (i + 1) + '] ' + r.appName + '\n');
+        if (name) txt += 'Name     : ' + name + '\n';
+        if (r.email) txt += 'Email    : ' + r.email + '\n';
+        if (r.phone) txt += 'Phone    : ' + r.phone + '\n';
+        if (r.username) txt += 'Username : ' + r.username + '\n';
+        if (r.password) txt += 'Password : ' + r.password + '\n';
+        txt += '----------------------------------------\n';
+      });
+    }
+
+    const filename = `${prefix}_${title}_${ts}`;
+    if (format === 'csv') downloadFile(String.fromCharCode(0xFEFF) + csv, `${filename}.csv`, 'text/csv;charset=utf-8');
+    else downloadFile(txt, `${filename}.txt`, 'text/plain;charset=utf-8');
+  }
+
+  function buildPrintContent(type) {
+    let resultsCount = 0;
+    let title = '';
+    if (type === 'username') { resultsCount = usernameResults.length; title = 'Usernames'; }
+    else if (type === 'password') { resultsCount = passwordResults.length; title = 'Passwords'; }
+    else { resultsCount = fuseResults.length; title = 'Fuse'; }
+
+    if (resultsCount === 0) return null;
+
+    const single = resultsCount === 1;
+    const now = new Date();
+    const dateStr = now.toLocaleString();
+    let printHtml = `<h1>HijiForge - Generated ${title}</h1>`;
+    printHtml += `<div class="print-date">Generated on: ${dateStr}</div>`;
+
+    if (type === 'username') {
+      usernameResults.forEach((r, i) => {
+        printHtml += `<div class="print-item">${single ? '' : `<div class="print-item-title">[${i + 1}]</div>`}<div class="print-item-row"${single ? '' : ' style="margin-left: 10px;"'}>${escapeHTML(r.value)}</div></div>`;
+      });
+    } else if (type === 'password') {
+      passwordResults.forEach((r, i) => {
+        printHtml += `<div class="print-item">${single ? '' : `<div class="print-item-title">[${i + 1}]</div>`}<div class="print-item-row"${single ? '' : ' style="margin-left: 10px;"'}>${escapeHTML(r.value)}</div></div>`;
+      });
+    } else {
+      fuseResults.forEach((r, i) => {
+        const name = [r.firstName, r.lastName].filter(Boolean).map(escapeHTML).join(' ');
+        printHtml += `<div class="print-item">
+          <div class="print-item-title">${single ? escapeHTML(r.appName) : `[${i + 1}] ${escapeHTML(r.appName)}`}</div>
+          ${name ? `<div class="print-item-row"><span class="print-label">Name</span> : ${name}</div>` : ''}
+          ${r.email ? `<div class="print-item-row"><span class="print-label">Email</span> : ${escapeHTML(r.email)}</div>` : ''}
+          ${r.phone ? `<div class="print-item-row"><span class="print-label">Phone</span> : ${escapeHTML(r.phone)}</div>` : ''}
+          ${r.username ? `<div class="print-item-row"><span class="print-label">Username</span> : ${escapeHTML(r.username)}</div>` : ''}
+          ${r.password ? `<div class="print-item-row"><span class="print-label">Password</span> : ${escapeHTML(r.password)}</div>` : ''}
+        </div><hr style="border:0; border-bottom:1px dashed #ccc; margin-bottom:15px; margin-top: 15px;">`;
+      });
+    }
+    return printHtml;
+  }
+
+  function printData() {
+    window.print();
+  }
+
+  function resetBackupModalToInitial() {
+    updateState = null;
+    const fileInput = document.getElementById('update-file');
+    if (fileInput) fileInput.value = '';
+    const fileNameEl = document.getElementById('update-file-name');
+    if (fileNameEl) fileNameEl.textContent = '';
+    const preview = document.getElementById('update-preview');
+    if (preview) preview.style.display = 'none';
+    const btn = document.getElementById('btn-do-update');
+    if (btn) btn.disabled = true;
+    const status = document.getElementById('update-status-msg');
+    if (status) { status.className = 'status-message'; status.textContent = ''; }
+    const list = document.getElementById('update-preview-list');
+    if (list) list.innerHTML = '';
+    updateUpdateModeAvailability();
+  }
+
+  function openBackupModal() {
+    resetBackupModalToInitial();
+    lastFocusedElement = document.activeElement || document.body;
+    document.getElementById('backupModal').classList.add('show');
+    document.getElementById('backupModal').setAttribute('aria-hidden', 'false');
+    setTimeout(() => {
+      const c = document.getElementById('btn-backup-close');
+      if (c) c.focus();
+    }, 50);
+  }
+
+  async function doBackup() {
+    if (!fuseResults || fuseResults.length === 0) {
+      setStatus('fuse', 'Error: Nothing to download.', 'error');
+      return false;
+    }
+
+    try {
+      const data = {
+        format: 'hijiforge-backup',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        fuse: fuseResults.map(item => {
+          const uFmt = item.uFormat || analyzeStringFormat(item.username || '', true);
+          const pFmt = item.pFormat || analyzeStringFormat(item.password || '', false);
+          return {
+            appName: item.appName || '',
+            firstName: item.firstName || '',
+            lastName: item.lastName || '',
+            email: item.email || '',
+            phone: item.phone || '',
+            username: item.username || '',
+            password: item.password || '',
+            uFormat: uFmt,
+            pFormat: pFmt
+          };
+        })
+      };
+
+      const encryptedPayload = await encryptData(JSON.stringify(data));
+
+      const payload = {
+        format: 'hijiforge-backup',
+        version: 1,
+        salt: encryptedPayload.salt,
+        iv: encryptedPayload.iv,
+        data: encryptedPayload.data
+      };
+
+      const ts = getTimestamp();
+      const filename = `HijiForge_Backup_${ts}${BACKUP_EXTENSION}`;
+      return downloadFile(JSON.stringify(payload, null, 2), filename, 'application/octet-stream');
+    } catch (e) {
+      console.error(e);
+      setStatus('fuse', 'Error: Failed to generate backup file.', 'error');
+      return false;
+    }
+  }
+
+  function formatAge(date) {
+    if (!date || isNaN(date.getTime())) return 'unknown date';
+    const days = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (days < 0) return 'in the future';
+    if (days < 1) return 'today';
+    if (days < 30) return days + ' days ago';
+    const months = Math.floor(days / 30);
+    if (months < 12) return months + ' months ago';
+    return Math.floor(months / 12) + ' years ago';
+  }
+
+  async function handleUpdateFile(file) {
+    updateState = null;
+    const preview = document.getElementById('update-preview');
+    const btn = document.getElementById('btn-do-update');
+    const fileNameEl = document.getElementById('update-file-name');
+
+    if (!file) {
+      preview.style.display = 'none';
+      btn.disabled = true;
+      fileNameEl.textContent = '';
+      return;
+    }
+
+    fileNameEl.textContent = file.name;
+
+    if (file.size > MAX_BACKUP_FILE_BYTES) {
+      showUpdateError('File is too large (maximum 5 MB).');
+      return;
+    }
+
+    preview.style.display = 'none';
+    btn.disabled = true;
+
+    const reader = new FileReader();
+    reader.onerror = function () { showUpdateError('Failed to read file.'); };
+    reader.onload = async function (e) {
+      let data;
+      try {
+        data = JSON.parse(e.target.result);
+      } catch (err) {
+        return showUpdateError('File is not valid JSON or is corrupted.');
+      }
+
+      if (!data || typeof data !== 'object') return showUpdateError('Invalid backup file.');
+      if (data.format !== 'hijiforge-backup') return showUpdateError('Invalid backup file format.');
+      if (!data.salt || !data.iv || !data.data) {
+        return showUpdateError('Invalid or unsupported backup file.');
+      }
+
+      let decryptedText;
+      try {
+        decryptedText = await decryptData(data);
+      } catch (err) {
+        return showUpdateError('Backup file is corrupted or not from HijiForge.');
+      }
+
+      try {
+        const decData = JSON.parse(decryptedText);
+        if (!decData || typeof decData !== 'object') return showUpdateError('Invalid backup content.');
+
+        const rawFuse = decData.fuse;
+        if (!Array.isArray(rawFuse) || rawFuse.length === 0) return showUpdateError('Backup file contains no fused credentials.');
+        if (rawFuse.length > MAX_FUSE_PER_FILE) return showUpdateError('File too large (maximum ' + MAX_FUSE_PER_FILE + ' entries).');
+
+        const MAXLEN = { appName: 50, firstName: 50, lastName: 50, email: 50, phone: 50, username: 50, password: 50 };
+        const sanitized = [];
+        for (let i = 0; i < rawFuse.length; i++) {
+          const item = rawFuse[i];
+          if (!item || typeof item !== 'object') return showUpdateError('Entry #' + (i + 1) + ' is invalid.');
+          const out = {};
+          for (const field of ['appName', 'firstName', 'lastName', 'email', 'phone', 'username', 'password']) {
+            const v = item[field];
+            if (v === undefined || v === null) out[field] = '';
+            else if (typeof v !== 'string') return showUpdateError('Entry #' + (i + 1) + ' field "' + field + '" is not a string.');
+            else if (v.length > MAXLEN[field]) return showUpdateError('Entry #' + (i + 1) + ' field "' + field + '" is too long.');
+            else out[field] = v;
+          }
+          if (!out.appName) return showUpdateError('Entry #' + (i + 1) + ' is missing a platform name.');
+
+          out.uFormat = normalizeImportedFormat(item.uFormat, out.username, true);
+          out.pFormat = normalizeImportedFormat(item.pFormat, out.password, false);
+
+          sanitized.push(out);
+        }
+
+        updateState = { format: 'hijiforge-backup', version: 1, exportedAt: decData.exportedAt, fuse: sanitized };
+
+        const status = document.getElementById('update-status-msg');
+        status.className = 'status-message success';
+        status.style.display = 'block';
+        const exportedAt = decData.exportedAt ? new Date(decData.exportedAt) : null;
+        const ageStr = exportedAt ? formatAge(exportedAt) : 'unknown date';
+        status.textContent = `${sanitized.length} credentials • ${ageStr}`;
+
+        const list = document.getElementById('update-preview-list');
+        list.innerHTML = sanitized.map((item, i) => {
+          const name = [item.firstName, item.lastName].filter(Boolean).join(' ');
+          return `<div>${i + 1}. ${escapeHTML(item.appName)}${name ? ' — ' + escapeHTML(name) : ''}</div>`;
+        }).join('');
+
+        preview.style.display = 'block';
+        btn.disabled = false;
+        updateUpdateModeAvailability();
+
+      } catch (err) {
+        console.error(err);
+        showUpdateError('Backup content is corrupted.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function showUpdateError(msg) {
+    updateState = null;
+    document.getElementById('update-preview').style.display = 'block';
+    const status = document.getElementById('update-status-msg');
+    status.className = 'status-message error';
+    status.style.display = 'block';
+    status.textContent = msg;
+    document.getElementById('update-preview-list').innerHTML = '';
+    document.getElementById('btn-do-update').disabled = true;
+    updateUpdateModeAvailability();
+  }
+
+  function getFocusable(container) {
+    const all = container.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    return Array.from(all).filter(el => el.offsetParent !== null);
+  }
+
+  function trapFocus(modal, e) {
+    if (e.key === 'Escape') {
+      const closeBtn = modal.querySelector('.modal-close');
+      if (closeBtn) closeBtn.click();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const focusable = getFocusable(modal);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  function applyAccessibleLabels() {
+    document.querySelectorAll('.stepper-btn').forEach(btn => {
+      const lbl = document.querySelector('label[for="' + btn.dataset.target + '"]');
+      const name = lbl ? lbl.textContent.replace(/:\s*$/, '').trim() : btn.dataset.target;
+      btn.setAttribute('aria-label', (parseInt(btn.dataset.delta, 10) < 0 ? 'Decrease ' : 'Increase ') + name);
+    });
+    [
+      ['btn-about', 'Privacy & data'],
+      ['btn-backup', 'Update fused credentials from a saved backup'],
+      ['btn-reset', 'Wipe saved data and results']
+    ].forEach(idLabel => {
+      const el = document.getElementById(idLabel[0]);
+      if (el) el.setAttribute('aria-label', idLabel[1]);
+    });
+  }
+
+  function initEvents() {
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      resetToDefault().catch(console.error);
+    });
+
+    document.getElementById('btn-theme-toggle').addEventListener('click', function () {
+      const isDark = getEffectiveDarkMode();
+      if (isDark) setTheme('light');
+      else setTheme('dark');
+    });
+
+    window.addEventListener('beforeprint', function () {
+      const html = buildPrintContent(activeTab);
+      document.getElementById('print-section').innerHTML = html ||
+        '<h1>HijiForge</h1><p style="color:#555;font-size:14px;">No results to print on this tab yet. Please generate results first.</p>';
+      if (!html) return;
+      if (!savedTitle) savedTitle = document.title;
+      const now = new Date();
+      const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+      let printTitle = 'HijiForge';
+      if (activeTab === 'fuse' && fuseResults.length > 0) {
+        printTitle = `HijiForge_Fuse_${ts}`;
+      } else if (activeTab === 'username') {
+        printTitle = `HijiForge_Users_${ts}`;
+      } else if (activeTab === 'password') {
+        printTitle = `HijiForge_Passes_${ts}`;
+      }
+      document.title = printTitle;
+    });
+
+    window.addEventListener('afterprint', function () {
+      if (savedTitle) { document.title = savedTitle; savedTitle = null; }
+      document.getElementById('print-section').innerHTML = '';
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        switchTab(btn.dataset.tab);
+        saveSettings();
+      });
+    });
+
+    document.querySelectorAll('.seg-btn[data-source]').forEach(btn => {
+      btn.addEventListener('click', function () {
+        setFuseSource(this.dataset.source);
+        saveSettings();
+      });
+    });
+
+    document.getElementById('f-no-password').addEventListener('change', saveSettings);
+
+    ['upd-metadata', 'upd-email', 'upd-telephone', 'upd-username', 'upd-password'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', updateUpdateModeAvailability);
+    });
+
+    document.getElementById('f-filter-input').addEventListener('input', function () {
+      currentFilterText = this.value;
+      renderResults('fuse');
+      saveSettingsDebounced();
+    });
+
+    document.getElementById('f-clear-filter').addEventListener('click', function() {
+      document.getElementById('f-filter-input').value = '';
+      currentFilterText = '';
+      isChangedOnly = false;
+      document.getElementById('f-changed-only-btn').classList.remove('primary');
+      renderResults('fuse');
+      saveSettings();
+    });
+
+    document.getElementById('f-changed-only-btn').addEventListener('click', function() {
+      isChangedOnly = !isChangedOnly;
+      this.classList.toggle('primary', isChangedOnly);
+      renderResults('fuse');
+      saveSettings();
+    });
+
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'input'].forEach(function (ev) {
+      document.addEventListener(ev, resetIdleTimerThrottled, { passive: true, capture: true });
+    });
+
+    ['mousedown', 'keydown', 'touchstart', 'input'].forEach(function (ev) {
+      document.addEventListener(ev, hideIdleStatus, { passive: true, capture: true });
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        if (idleTimerHandle) {
+          idleRemainingMs = Math.max(0, idleRemainingMs - (Date.now() - idleLastTickAt));
+          clearTimeout(idleTimerHandle);
+          idleTimerHandle = null;
+        }
+      } else {
+        if (idleArmed && !idleTimerHandle) {
+          if (idleRemainingMs <= 0) performIdleRefresh();
+          else scheduleIdleFire();
+        }
+      }
+    });
+
+    const useManualCb = document.getElementById('f-use-manual');
+    const noUsernameCb = document.getElementById('f-no-username');
+
+    if (useManualCb && noUsernameCb) {
+      useManualCb.addEventListener('change', function () {
+        if (this.checked) {
+          noUsernameCb.checked = false;
+          toggleManualUsernameInput(true);
+          const mInput = document.getElementById('f-manualUsername');
+          if (mInput.value.trim() === '') mInput.classList.add('invalid');
+          else mInput.classList.remove('invalid');
+        } else {
+          toggleManualUsernameInput(false);
+        }
+        saveSettings();
+      });
+      noUsernameCb.addEventListener('change', function () {
+        if (this.checked) {
+          useManualCb.checked = false;
+          toggleManualUsernameInput(false);
+        }
+        saveSettings();
+      });
+    }
+
+    document.getElementById('btn-about').addEventListener('click', () => {
+      lastFocusedElement = document.activeElement || document.body;
+      document.getElementById('aboutModal').classList.add('show');
+      document.getElementById('aboutModal').setAttribute('aria-hidden', 'false');
+      setTimeout(() => { const c = document.getElementById('btn-modal-close'); if (c) c.focus(); }, 50);
+    });
+    document.getElementById('btn-modal-close').addEventListener('click', () => {
+      document.getElementById('aboutModal').classList.remove('show');
+      document.getElementById('aboutModal').setAttribute('aria-hidden', 'true');
+      if (lastFocusedElement && lastFocusedElement !== document.body) { try { lastFocusedElement.focus(); } catch (e) {} }
+    });
+    document.getElementById('aboutModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) document.getElementById('btn-modal-close').click();
+    });
+    document.getElementById('aboutModal').addEventListener('keydown', function (e) {
+      trapFocus(this, e);
+    });
+
+    document.getElementById('btn-backup').addEventListener('click', openBackupModal);
+    document.getElementById('btn-backup-close').addEventListener('click', () => {
+      document.getElementById('backupModal').classList.remove('show');
+      document.getElementById('backupModal').setAttribute('aria-hidden', 'true');
+      if (lastFocusedElement && lastFocusedElement !== document.body) { try { lastFocusedElement.focus(); } catch (e) {} }
+    });
+    document.getElementById('backupModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) document.getElementById('btn-backup-close').click();
+    });
+    document.getElementById('backupModal').addEventListener('keydown', function (e) {
+      trapFocus(this, e);
+    });
+
+    document.getElementById('edit-tab-platform').addEventListener('click', function() { switchEditTab('platform'); });
+    document.getElementById('edit-tab-name').addEventListener('click', function() { switchEditTab('name'); });
+
+    document.getElementById('btn-edit-cancel').addEventListener('click', closeEditModal);
+    document.getElementById('btn-edit-ok').addEventListener('click', saveEdit);
+    document.getElementById('editMetadataModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeEditModal();
+    });
+    document.getElementById('editMetadataModal').addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { closeEditModal(); return; }
+      if (e.key === 'Tab') {
+        const focusable = getFocusable(this);
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+      if (e.key === 'Enter' && !document.getElementById('btn-edit-ok').disabled) {
+        e.preventDefault();
+        saveEdit();
+      }
+    });
+
+    document.getElementById('edit-single-input').addEventListener('input', function () {
+      if (currentEditType === 'email') {
+        validateEditField();
+      } else if (currentEditType === 'phone') {
+        this.value = sanitizePhone(this.value);
+      } else if (currentEditType === 'username') {
+        this.value = sanitizeUsername(this.value);
+      } else if (currentEditType === 'password') {
+        this.value = sanitizePassword(this.value);
+      }
+    });
+
+    document.getElementById('edit-first-input').addEventListener('input', function () {
+      this.value = sanitizeName(this.value);
+    });
+    document.getElementById('edit-last-input').addEventListener('input', function () {
+      this.value = sanitizeName(this.value);
+    });
+
+    document.getElementById('f-btn-backup-primary').addEventListener('click', function () {
+      doBackup();
+    });
+
+    document.getElementById('update-file-trigger').addEventListener('click', function () {
+      document.getElementById('update-file').click();
+    });
+    document.getElementById('update-file').addEventListener('change', function () {
+      handleUpdateFile(this.files[0]);
+    });
+
+    document.getElementById('btn-do-update').addEventListener('click', doUpdate);
+
+    document.getElementById('f-btn-update-file').addEventListener('click', async function() {
+      if (!hasGeneratedUpdate) return;
+
+      const success = await doBackup();
+      if (!success) {
+        setStatus('fuse', 'Error: backup download failed or cancelled. Update mode is still active so you can retry.', 'error');
+        return;
+      }
+
+      setTimeout(() => {
+        unlockUI();
+        saveSettings();
+      }, 300);
+    });
+
+    document.getElementById('f-btn-cancel-update').addEventListener('click', async function () {
+      const confirmed = await showConfirm('Cancel update mode? All unsaved changes will be discarded. The loaded file will be removed from memory. Settings and form inputs are kept.');
+      if (!confirmed) return;
+
+      try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+
+      usernameResults = [];
+      passwordResults = [];
+      fuseResults = [];
+      currentFilterText = '';
+      isChangedOnly = false;
+
+      document.getElementById('u-list').innerHTML = '';
+      document.getElementById('p-list').innerHTML = '';
+      document.getElementById('f-list').innerHTML = '';
+      document.getElementById('u-actionButtons').classList.remove('show');
+      document.getElementById('p-actionButtons').classList.remove('show');
+      document.getElementById('f-actionButtons').classList.remove('show');
+
+      restoreFormSnapshot();
+      unlockUI();
+      refreshIdleProtection();
+      saveSettings();
+    });
+
+    const btnClear = document.getElementById('btn-clear-clipboard');
+    if (btnClear) {
+      btnClear.addEventListener('click', function () {
+        const original = this.textContent;
+        this.disabled = true; this.textContent = 'Clearing...';
+        overwriteClipboard().then((ok) => {
+          this.textContent = ok ? 'Cleared!' : 'Failed';
+          if (ok) { clipboardHoldsCredential = false; clearTimeout(clipboardClearTimer); }
+          setTimeout(() => { this.textContent = original; this.disabled = false; }, 1500);
+        });
+      });
+    }
+
+    document.getElementById('u-toggle-lower').addEventListener('click', () => toggleOption('username', 'lower'));
+    document.getElementById('u-toggle-upper').addEventListener('click', () => toggleOption('username', 'upper'));
+    document.getElementById('u-toggle-unique').addEventListener('click', () => toggleOption('username', 'unique'));
+    document.getElementById('p-toggle-lower').addEventListener('click', () => toggleOption('password', 'lower'));
+    document.getElementById('p-toggle-upper').addEventListener('click', () => toggleOption('password', 'upper'));
+    document.getElementById('p-toggle-numbers').addEventListener('click', () => toggleOption('password', 'numbers'));
+    document.getElementById('p-toggle-symbols').addEventListener('click', () => toggleOption('password', 'symbols'));
+
+    document.getElementById('u-customNumbers').addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); saveSettingsDebounced(); });
+    document.getElementById('u-exclude').addEventListener('input', function () { this.value = this.value.replace(/[^a-zA-Z0-9]/g, ''); saveSettingsDebounced(); });
+    document.getElementById('p-exclude').addEventListener('input', function () { this.value = this.value.replace(/[\s\x00-\x1f\x7f]/g, ''); saveSettingsDebounced(); });
+
+    document.getElementById('f-appName').addEventListener('input', function () {
+      if (this.value.trim() !== '') this.classList.remove('invalid');
+      saveSettingsDebounced();
+    });
+
+    document.getElementById('f-appName').addEventListener('blur', function () {
+      if (this.value.trim() !== '') this.value = normalizePlatformName(this.value);
+      if (this.value.trim() === '') this.classList.add('invalid');
+      saveSettingsDebounced();
+    });
+
+    ['f-firstName', 'f-lastName'].forEach(id => {
+      document.getElementById(id).addEventListener('blur', function () {
+        if (this.value.trim() !== '') {
+          this.value = formatPersonName(sanitizeName(this.value));
+          saveSettingsDebounced();
+        }
+      });
+    });
+
+    document.getElementById('f-telephone').addEventListener('input', function () {
+      this.value = sanitizePhone(this.value);
+      saveSettingsDebounced();
+    });
+
+    document.getElementById('f-email').addEventListener('input', function () {
+      this.value = this.value.replace(/[\x00-\x1f\x7f]/g, '');
+      const email = this.value.trim();
+      if (email !== '' && !EMAIL_REGEX.test(email)) this.classList.add('invalid');
+      else this.classList.remove('invalid');
+      saveSettingsDebounced();
+    });
+
+    document.getElementById('f-manualUsername').addEventListener('input', function () {
+      this.value = sanitizeUsername(this.value);
+      if (this.value.trim() === '') this.classList.add('invalid');
+      else this.classList.remove('invalid');
+      saveSettingsDebounced();
+    });
+
+    ['u-excludeAscenders', 'u-excludeDescenders', 'p-excludeSimilar', 'p-requireEach'].forEach(id => {
+      document.getElementById(id).addEventListener('change', saveSettings);
+    });
+
+    ['u-minChars', 'u-count', 'u-length', 'p-count', 'p-length', 'f-count'].forEach(id => {
+      document.getElementById(id).addEventListener('change', function () { enforceLimits(id); });
+    });
+
+    ['u-minChars', 'u-count', 'u-length', 'p-count', 'p-length', 'f-count'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function () { enforceMaxOnInput(id); });
+    });
+
+    document.querySelectorAll('.stepper-btn').forEach(btn => {
+      btn.addEventListener('click', function () { changeValue(this.dataset.target, parseInt(this.dataset.delta, 10)); });
+    });
+
+    document.getElementById('u-btn-generate').addEventListener('click', () => triggerGenerate('username'));
+    document.getElementById('p-btn-generate').addEventListener('click', () => triggerGenerate('password'));
+    document.getElementById('f-btn-generate').addEventListener('click', () => triggerGenerate('fuse'));
+
+    document.querySelectorAll('.btn-action').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const action = this.dataset.action;
+        const type = this.dataset.tab;
+        if (!type) return;
+
+        if (action === 'copy-all') {
+          let results = [];
+          if (type === 'username') results = usernameResults.map(r => r.value);
+          else if (type === 'password') results = passwordResults.map(r => r.value);
+          else {
+            const single = fuseResults.length === 1;
+            results = fuseResults.map(function (r, i) {
+              const name = [r.firstName, r.lastName].filter(Boolean).join(' ');
+              const lines = [single ? r.appName : ('[' + (i + 1) + '] ' + r.appName)];
+              if (name) lines.push('Name: ' + name);
+              if (r.email) lines.push('Email: ' + r.email);
+              if (r.phone) lines.push('Phone: ' + r.phone);
+              if (r.username) lines.push('Username: ' + r.username);
+              if (r.password) lines.push('Password: ' + r.password);
+              return lines.join('\n');
+            });
+          }
+          if (results.length > 0) {
+            const self = this;
+            const originalText = self.textContent;
+            copyTextToClipboard(results.join('\n\n----------------------------------------\n\n')).then(ok => {
+              if (!ok) return;
+              self.textContent = 'Copied!'; self.classList.add('success-state');
+              setTimeout(() => { self.textContent = originalText; self.classList.remove('success-state'); }, 1500);
+            });
+          }
+        } else if (action === 'export') {
+          exportData(type, 'csv');
+        } else if (action === 'export-txt') {
+          exportData(type, 'txt');
+        } else if (action === 'print') {
+          printData();
+        }
+      });
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (document.getElementById('aboutModal').classList.contains('show')) {
+          document.getElementById('btn-modal-close').click();
+        }
+        if (document.getElementById('backupModal').classList.contains('show')) {
+          document.getElementById('btn-backup-close').click();
+        }
+      }
+    });
+  }
+
+  function boot() {
+    let failed = false;
+    [
+      initEvents,
+      loadSettings,
+      applyAccessibleLabels,
+      function () { switchTab(activeTab); },
+      checkIdleFlagOnBoot,
+      refreshIdleProtection,
+      updateBackupUI
+    ].forEach(function (step) {
+      try { step(); }
+      catch (e) {
+        failed = true;
+        console.error(e);
+        if (window.__hijiforgeBoot) window.__hijiforgeBoot.errors.push(String(e && e.message || e));
+      }
+    });
+    if (window.__hijiforgeBoot && !failed) window.__hijiforgeBoot.ready = true;
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+</script>
+</body>
+</html>
