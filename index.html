@@ -56,13 +56,23 @@
       html.style.backgroundColor = dark ? '#121212' : '#f5f5f5';
 
       var tab = data.activeTab;
-      if (tab === 'username' || tab === 'fuse' || tab === 'password') {
+      if (tab === 'username' || tab === 'fuse' || tab === 'password' || tab === 'update' || tab === 'extra') {
         html.setAttribute('data-hf-tab', tab);
       }
 
       var source = data.fSource;
       if (source === 'random' || source === 'existing') {
         html.setAttribute('data-hf-source', source);
+      }
+
+      var sessStr = null;
+      try { sessStr = sessionStorage.getItem('hijiforgeSession'); } catch (e) {}
+      if (sessStr) {
+        var sess = null;
+        try { sess = JSON.parse(sessStr); } catch (e) { sess = null; }
+        if (sess && sess.isUpdateModeActive) {
+          html.setAttribute('data-hf-update-mode', 'true');
+        }
       }
 
       setTimeout(function () { html.classList.remove('no-transition'); }, 200);
@@ -110,11 +120,7 @@
       color-scheme: dark;
     }
 
-    html.dark-mode .segmented-control {
-      background-color: #262626;
-      border-color: #3a3a3a;
-    }
-
+    html.dark-mode .segmented-control { background-color: #262626; border-color: #3a3a3a; }
     html { background-color: var(--bg-body); }
 
     * {
@@ -125,16 +131,26 @@
       *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
     }
     body { background-color: var(--bg-body); margin: 0; padding: 0; display: flex; justify-content: center; }
+    
     .app-container {
       width: 100%; max-width: 500px; background-color: var(--bg-app);
       min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,.1); padding-bottom: 40px;
+      position: relative;
+    }
+
+    .sticky-top-wrapper {
+      position: sticky; top: 0; z-index: 20; width: 100%;
+      transition: top .25s ease;
+    }
+    .sticky-top-wrapper.header-hidden {
+      top: calc(-1 * var(--header-height, 56px));
     }
 
     .header {
       background-color: var(--maroon); color: var(--cream);
       padding: 15px; font-size: 22px; font-weight: 700; letter-spacing: 1px;
       display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 10;
+      width: 100%;
     }
     .header-left { display: flex; align-items: center; gap: 12px; }
     .header-title-wrap { display: inline-flex; align-items: center; gap: 6px; }
@@ -150,15 +166,19 @@
 
     .tab-container {
       display: flex; background-color: var(--bg-tab);
-      margin: 15px 20px 10px 20px; padding: 5px;
-      border-radius: 10px; border: 1px solid var(--border-card); gap: 6px;
+      margin: 0; padding: 5px;
+      border-radius: 0; border: none; border-bottom: 1px solid var(--border-card); gap: 4px;
+      width: 100%;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
     .tab-btn {
-      flex: 1; padding: 12px 0; text-align: center; font-size: 14px; font-weight: 700;
+      flex: 1; padding: 10px 0; text-align: center; font-size: 14px; font-weight: 700;
       color: var(--text-muted); background: transparent; border: none; cursor: pointer;
       border-radius: 6px; transition: all .2s; text-decoration: none !important;
       appearance: none; -webkit-appearance: none;
+      display: flex; justify-content: center; align-items: center;
     }
+    .tab-btn svg { width: 22px; height: 22px; stroke-width: 2.5px; }
     .tab-btn:hover:not(:disabled):not(.active) { color: var(--text-main); }
     .tab-btn.active {
       background-color: var(--maroon); color: var(--cream) !important;
@@ -170,58 +190,42 @@
 
     html[data-hf-tab="fuse"] #tab-btn-fuse,
     html[data-hf-tab="username"] #tab-btn-username,
-    html[data-hf-tab="password"] #tab-btn-password {
+    html[data-hf-tab="password"] #tab-btn-password,
+    html[data-hf-tab="update"] #tab-btn-update,
+    html[data-hf-tab="extra"] #tab-btn-extra {
       background-color: var(--maroon); color: var(--cream) !important;
       box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
     }
     html[data-hf-tab="fuse"] #tab-fuse,
     html[data-hf-tab="username"] #tab-username,
-    html[data-hf-tab="password"] #tab-password {
+    html[data-hf-tab="password"] #tab-password,
+    html[data-hf-tab="update"] #tab-update,
+    html[data-hf-tab="extra"] #tab-extra {
       display: block;
     }
+
+    html[data-hf-update-mode="true"] #update-interface { display: none !important; }
 
     .content-area { padding: 10px 20px 20px 20px; display: none; }
     .content-area.active { display: block; }
 
-    .btn-toggle-group {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 20px;
-    }
+    .btn-toggle-group { display: flex; gap: 6px; margin-bottom: 20px; }
     .btn-toggle {
-      flex: 1;
-      min-width: 0;
-      min-height: 44px;
-      padding: 8px 4px;
-      border-radius: 6px;
-      border: 2px solid var(--border-icon);
-      background-color: var(--bg-icon);
-      color: var(--text-muted);
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      user-select: none;
+      flex: 1; min-width: 0; min-height: 44px; padding: 8px 4px;
+      border-radius: 6px; border: 2px solid var(--border-icon);
+      background-color: var(--bg-icon); color: var(--text-muted);
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; user-select: none;
       transition: transform .1s, background-color .15s, border-color .15s, color .15s;
-      -webkit-tap-highlight-color: transparent;
-      appearance: none;
-      -webkit-appearance: none;
+      -webkit-tap-highlight-color: transparent; appearance: none; -webkit-appearance: none;
     }
     .btn-toggle:active { transform: scale(.96); }
     .btn-toggle.active {
-      background-color: var(--maroon);
-      border-color: var(--maroon-dark);
-      color: var(--cream);
-      box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
+      background-color: var(--maroon); border-color: var(--maroon-dark);
+      color: var(--cream); box-shadow: 0 2px 5px rgba(89, 9, 21, 0.25);
     }
-    .btn-toggle.active:active {
-      background-color: var(--maroon-dark);
-      transform: scale(.96);
-    }
-    .btn-toggle:focus-visible {
-      outline: 2px solid var(--maroon);
-      outline-offset: 2px;
-    }
+    .btn-toggle.active:active { background-color: var(--maroon-dark); transform: scale(.96); }
+    .btn-toggle:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
     @media (max-width: 380px) {
       .btn-toggle { font-size: 12px; padding: 8px 2px; }
       .btn-toggle-group { gap: 4px; }
@@ -236,18 +240,28 @@
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .text-input:focus { outline: none; border-color: var(--maroon); box-shadow: 0 0 0 2px rgba(89, 9, 21, 0.15); }
-    .text-input.invalid {
-      border-color: var(--error-red) !important;
-      box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15) !important;
+    .text-input.invalid { border-color: var(--error-red) !important; box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15) !important; }
+    
+    .file-upload-wrapper { margin-bottom: 15px; }
+    .file-upload-label {
+      display: flex; justify-content: center; align-items: center; width: 100%;
+      padding: 12px; background-color: var(--bg-card); color: var(--text-main);
+      border: 2px solid var(--border-color); border-radius: 6px;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s;
     }
-    #f-filter-input {
-      border: 1.5px solid var(--border-color);
-      background-color: var(--bg-tab);
+    .file-upload-label:hover { background-color: var(--border-color); }
+    .file-upload-label:active { transform: scale(.98); }
+    
+    .password-input-wrapper { position: relative; display: flex; align-items: center; }
+    .password-input-wrapper .text-input { padding-right: 40px; font-family: inherit; }
+    .eye-btn {
+      position: absolute; right: 10px; background: none; border: none; cursor: pointer;
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center; padding: 5px;
     }
-    #f-filter-input:focus {
-      border-color: var(--maroon);
-      background-color: var(--bg-input);
-    }
+    .eye-btn svg { width: 22px; height: 22px; stroke-width: 2.5px; }
+
+    #f-filter-input, #u-filter-input { border: 1.5px solid var(--border-color); background-color: var(--bg-tab); }
+    #f-filter-input:focus, #u-filter-input:focus { border-color: var(--maroon); background-color: var(--bg-input); }
     .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-left: 5px; }
     .checkbox-item { display: flex; align-items: flex-start; font-size: 13px; color: var(--text-main); cursor: pointer; }
     .checkbox-item input[type=checkbox] {
@@ -259,8 +273,7 @@
 
     .segmented-control {
       display: flex; gap: 6px; background-color: #f7f7f7;
-      padding: 5px; border-radius: 10px; margin-bottom: 20px;
-      border: 1px solid #e5e5e5;
+      padding: 5px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e5e5e5;
     }
     .seg-btn {
       flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 700;
@@ -306,11 +319,6 @@
     .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-generate:focus-visible, .btn-action:focus-visible, .stepper-btn:focus-visible, .seg-btn:focus-visible { outline: 2px solid var(--maroon); outline-offset: 2px; }
 
-    #f-update-actions {
-      display: none;
-      gap: 10px;
-      margin-top: 10px;
-    }
     .btn-cancel-update {
       flex: 1; background-color: var(--amber); color: var(--amber-text);
       border: 2px solid var(--amber); padding: 15px; font-size: 16px; font-weight: 700;
@@ -319,6 +327,7 @@
     .btn-cancel-update:hover { background-color: var(--amber-hover); border-color: var(--amber-hover); }
     .btn-cancel-update:active { transform: scale(.98); background-color: var(--amber-active); border-color: var(--amber-active); }
     .btn-cancel-update:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+    
     .btn-update-file {
       flex: 1; background-color: var(--success-green); color: #fff;
       border: none; padding: 15px; font-size: 16px; font-weight: 700;
@@ -330,12 +339,13 @@
     .btn-backup-primary {
       width: 100%; background-color: var(--success-green); color: #fff;
       border: none; padding: 15px; font-size: 16px; font-weight: 700;
-      border-radius: 6px; cursor: pointer; letter-spacing: .3px;
+      border-radius: 6px; cursor: pointer; letter-spacing: .3px; margin-top: 10px;
     }
     .btn-backup-primary:active { transform: scale(.98); filter: brightness(0.9); }
     .btn-backup-primary:focus-visible { outline: 2px solid var(--success-green); outline-offset: 2px; }
+    .btn-backup-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .action-buttons-group { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .action-buttons-group { display: none; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; margin-bottom: 15px; }
     .action-buttons-group.show { display: grid; }
     .btn-action {
       background-color: var(--bg-card); color: var(--text-main);
@@ -366,6 +376,7 @@
       letter-spacing: 1px; color: var(--text-main); flex-grow: 1;
       text-align: center; word-break: break-all; font-weight: 600;
     }
+    
     .fuse-card {
       background-color: var(--bg-card); border: 1px solid var(--border-card);
       border-radius: 8px; margin-bottom: 15px; padding: 15px;
@@ -378,30 +389,19 @@
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
     html.dark-mode .fuse-name { color: var(--cream); }
-
-    .fuse-name-text {
-      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-
-    .fuse-index {
-      font-family: inherit;
-      color: inherit;
-      font-size: inherit;
-      margin-right: 6px;
-      flex-shrink: 0;
-    }
+    .fuse-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .fuse-index { font-family: inherit; color: inherit; font-size: inherit; margin-right: 6px; flex-shrink: 0; }
 
     .fuse-badges { display: flex; gap: 5px; flex-shrink: 0; align-items: center; }
-    .mac-dot {
-      display: block; width: 11px; height: 11px; border-radius: 50%;
-      box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2);
-    }
+    .mac-dot { display: block; width: 11px; height: 11px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.2); }
     .mac-dot.dot-m { background-color: #3b82f6; }
     .mac-dot.dot-u { background-color: #eab308; }
     .mac-dot.dot-p { background-color: #22c55e; }
+    .mac-dot.dot-x { background-color: #a855f7; }
     html.dark-mode .mac-dot.dot-m { background-color: #60a5fa; }
     html.dark-mode .mac-dot.dot-u { background-color: #fde047; }
     html.dark-mode .mac-dot.dot-p { background-color: #4ade80; }
+    html.dark-mode .mac-dot.dot-x { background-color: #c084fc; }
 
     .fuse-row { margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .fuse-row-label { font-size: 12px; font-weight: 600; color: var(--text-muted); width: 70px; flex-shrink: 0; }
@@ -409,6 +409,7 @@
       font-family: Consolas, Monaco, monospace; font-size: 15px; font-weight: 600;
       color: var(--text-main); flex-grow: 1; word-break: break-all;
     }
+
     .icon-btn {
       background: none; border: none; cursor: pointer; color: var(--text-muted);
       padding: 8px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
@@ -422,36 +423,18 @@
     .icon-btn svg { width: 20px; height: 20px; stroke-width: 2.5px; }
     .icon-checkmark { stroke: #2e7d32 !important; stroke-width: 3px !important; }
 
-    .strength-bar-container { width: 100%; height: 5px; background-color: var(--border-card); border-radius: 3px; margin: 8px 0; overflow: hidden; }
+    .strength-bar-container { width: 100%; height: 5px; background-color: var(--border-card); border-radius: 3px; margin: 8px 0 0 0; overflow: hidden; }
     .strength-bar { height: 100%; width: 0; transition: width .3s, background-color .3s; }
-    .strength-text { font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); }
     .strength-bar[data-rating="cool"] { width: 33%; background-color: var(--rating-cool); }
     .strength-bar[data-rating="amazing"] { width: 66%; background-color: var(--rating-amazing); }
     .strength-bar[data-rating="epic"] { width: 100%; background-color: var(--rating-epic); }
-    .strength-text[data-rating="cool"] { color: var(--rating-cool); }
-    .strength-text[data-rating="amazing"] { color: var(--rating-amazing); }
-    .strength-text[data-rating="epic"] { color: var(--rating-epic); }
     .strength-bar[data-rating="weak"] { width: 25%; background-color: var(--rating-weak); }
     .strength-bar[data-rating="fair"] { width: 50%; background-color: var(--rating-fair); }
     .strength-bar[data-rating="strong"] { width: 75%; background-color: var(--rating-strong); }
     .strength-bar[data-rating="very"] { width: 100%; background-color: var(--rating-very); }
-    .strength-text[data-rating="weak"] { color: var(--rating-weak); }
-    .strength-text[data-rating="fair"] { color: var(--rating-fair); }
-    .strength-text[data-rating="strong"] { color: var(--rating-strong); }
-    .strength-text[data-rating="very"] { color: var(--rating-very); }
 
-    .filter-container {
-      display: flex; flex-direction: column; gap: 8px;
-      margin-top: 15px; margin-bottom: 5px;
-    }
-    .filter-actions {
-      display: flex; gap: 8px; align-items: center;
-    }
-
-    .empty-state {
-      text-align: center; padding: 30px 10px; color: var(--text-muted);
-      font-size: 14px; font-style: italic;
-    }
+    .filter-container { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; margin-bottom: 15px; }
+    .filter-actions { display: flex; gap: 8px; align-items: center; }
 
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -474,24 +457,17 @@
     .about-section p:last-child { margin-bottom: 0; }
 
     .warning-text {
-      color: var(--status-warning-text);
-      background-color: var(--status-warning-bg);
-      border: 1px solid var(--status-warning-text);
-      font-weight: 600; margin-top: 10px; padding: 10px; border-radius: 6px;
-      text-align: left;
+      color: var(--status-warning-text); background-color: var(--status-warning-bg);
+      border: 1px solid var(--status-warning-text); font-weight: 600; margin-top: 10px; padding: 10px; border-radius: 6px; text-align: left;
     }
     .about-section.warning-text p { color: var(--status-warning-text); text-align: left; }
     .preview-list {
       font-size: 12px; color: var(--text-muted); line-height: 1.7;
       padding: 10px; background: var(--bg-tab); border-radius: 6px;
-      margin-top: 8px; word-break: break-word; text-align: left;
-      max-height: 140px; overflow-y: auto;
+      margin-top: 8px; word-break: break-word; text-align: left; max-height: 140px; overflow-y: auto;
     }
 
-    .status-message {
-      margin-top: 10px; padding: 10px; border-radius: 6px;
-      font-size: 13px; font-weight: 600; text-align: center;
-    }
+    .status-message { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; }
     .status-message.success { background-color: var(--status-success-bg); color: var(--status-success-text); border: 1px solid var(--status-success-text); }
     .status-message.error { background-color: var(--status-error-bg); color: var(--status-error-text); border: 1px solid var(--status-error-text); }
 
@@ -501,8 +477,7 @@
     .modal-action-row .btn-action { width: auto; padding: 10px 20px; min-width: 80px; }
 
     .sr-only {
-      position: absolute; width: 1px; height: 1px;
-      padding: 0; margin: -1px; overflow: hidden;
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
       clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
 
@@ -534,33 +509,44 @@
 </noscript>
 
 <div class="app-container" id="app-container">
-  <div class="header no-print">
-    <div class="header-left">
-      <button type="button" class="icon-btn-header" id="btn-about" title="Privacy & data">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      </button>
-      <div class="header-title-wrap">
-        <span>HijiForge</span>
+  <div class="sticky-top-wrapper no-print">
+    <div class="header" id="main-header">
+      <div class="header-left">
+        <button type="button" class="icon-btn-header" id="btn-about" title="Privacy & data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="header-title-wrap">
+          <span>HijiForge</span>
+        </div>
+      </div>
+      <div class="header-icons">
+        <button type="button" class="icon-btn-header" id="btn-theme-toggle" title="Toggle Theme">
+          <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
+        <button type="button" class="icon-btn-header" id="btn-reset" title="Wipe saved data and results">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+        </button>
       </div>
     </div>
-    <div class="header-icons">
-      <button type="button" class="icon-btn-header" id="btn-backup" title="Update fused credentials from a saved backup">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <div id="notif-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="tab-container" role="tablist" aria-label="HijiForge sections">
+      <button type="button" role="tab" aria-selected="false" aria-controls="tab-username" class="tab-btn" data-tab="username" id="tab-btn-username" title="Username">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </button>
-      <button type="button" class="icon-btn-header" id="btn-theme-toggle" title="Toggle Theme">
-        <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></svg>
+      <button type="button" role="tab" aria-selected="false" aria-controls="tab-password" class="tab-btn" data-tab="password" id="tab-btn-password" title="Password">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
       </button>
-      <button type="button" class="icon-btn-header" id="btn-reset" title="Wipe saved data and results">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+      <button type="button" role="tab" aria-selected="true" aria-controls="tab-fuse" class="tab-btn" data-tab="fuse" id="tab-btn-fuse" title="Fuse">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      </button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="tab-update" class="tab-btn" data-tab="update" id="tab-btn-update" title="Update">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="tab-extra" class="tab-btn" data-tab="extra" id="tab-btn-extra" title="Extra">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
     </div>
-  </div>
-  <div id="notif-live" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-
-  <div class="tab-container no-print" role="tablist" aria-label="HijiForge sections">
-    <button type="button" role="tab" aria-selected="false" aria-controls="tab-username" class="tab-btn" data-tab="username" id="tab-btn-username">HijiUser</button>
-    <button type="button" role="tab" aria-selected="true" aria-controls="tab-fuse" class="tab-btn" data-tab="fuse" id="tab-btn-fuse">HijiFuse</button>
-    <button type="button" role="tab" aria-selected="false" aria-controls="tab-password" class="tab-btn" data-tab="password" id="tab-btn-password">HijiPass</button>
   </div>
 
   <div class="content-area no-print" id="tab-username" role="tabpanel" aria-labelledby="tab-btn-username">
@@ -619,6 +605,53 @@
       <button type="button" class="btn-action" data-action="print" data-tab="username">Print PDF</button>
     </div>
     <div class="password-list" id="u-list"></div>
+  </div>
+
+  <div class="content-area no-print" id="tab-password" role="tabpanel" aria-labelledby="tab-btn-password">
+    <div class="btn-toggle-group">
+      <button type="button" id="p-toggle-lower" class="btn-toggle active" aria-pressed="true">Lower</button>
+      <button type="button" id="p-toggle-upper" class="btn-toggle active" aria-pressed="true">Upper</button>
+      <button type="button" id="p-toggle-numbers" class="btn-toggle active" aria-pressed="true">Numbers</button>
+      <button type="button" id="p-toggle-symbols" class="btn-toggle active" aria-pressed="true">Symbols</button>
+    </div>
+    <div class="form-group">
+      <label for="p-exclude">Exclude Characters:</label>
+      <input type="text" id="p-exclude" class="text-input" value="" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+    </div>
+    <div class="checkbox-group">
+      <label class="checkbox-item" id="p-label-similar">
+        <input type="checkbox" id="p-excludeSimilar" checked>
+        <span>Exclude similar characters</span>
+      </label>
+      <label class="checkbox-item" id="p-label-require">
+        <input type="checkbox" id="p-requireEach" checked>
+        <span>Require at least one of each selected type</span>
+      </label>
+    </div>
+    <div class="input-row">
+      <label for="p-count">Number of Passwords:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="p-count" data-delta="-1">-</button>
+        <input type="number" id="p-count" value="1" min="1" max="50">
+        <button type="button" class="stepper-btn" data-target="p-count" data-delta="1">+</button>
+      </div>
+    </div>
+    <div class="input-row">
+      <label for="p-length">Password Length:</label>
+      <div class="input-control">
+        <button type="button" class="stepper-btn" data-target="p-length" data-delta="-1">-</button>
+        <input type="number" id="p-length" value="20" min="8" max="50">
+        <button type="button" class="stepper-btn" data-target="p-length" data-delta="1">+</button>
+      </div>
+    </div>
+    <button type="button" class="btn-generate" id="p-btn-generate">Generate Passwords</button>
+    <div id="p-actionButtons" class="action-buttons-group">
+      <button type="button" class="btn-action" data-action="copy-all" data-tab="password">Copy All</button>
+      <button type="button" class="btn-action" data-action="export" data-tab="password">Export CSV</button>
+      <button type="button" class="btn-action" data-action="export-txt" data-tab="password">Export TXT</button>
+      <button type="button" class="btn-action" data-action="print" data-tab="password">Print PDF</button>
+    </div>
+    <div class="password-list" id="p-list"></div>
   </div>
 
   <div class="content-area no-print" id="tab-fuse" role="tabpanel" aria-labelledby="tab-btn-fuse">
@@ -683,11 +716,6 @@
 
     <button type="button" class="btn-generate" id="f-btn-generate">Generate Fused</button>
 
-    <div id="f-update-actions">
-      <button type="button" class="btn-cancel-update" id="f-btn-cancel-update">Cancel</button>
-      <button type="button" class="btn-update-file" id="f-btn-update-file">Update</button>
-    </div>
-
     <div id="f-filter-container" class="filter-container" style="display: none;">
       <input type="text" id="f-filter-input" class="text-input" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Filter fused credentials">
       <div class="filter-actions">
@@ -702,57 +730,101 @@
       <button type="button" class="btn-action" data-action="export-txt" data-tab="fuse">Export TXT</button>
       <button type="button" class="btn-action" data-action="print" data-tab="fuse">Print PDF</button>
     </div>
-    <div id="f-backup-actions" style="display: none; margin-top: 10px;">
-      <button type="button" class="btn-backup-primary" id="f-btn-backup-primary" title="Download all fused credentials as a protected backup">Backup</button>
-    </div>
     <div class="password-list" id="f-list"></div>
   </div>
 
-  <div class="content-area no-print" id="tab-password" role="tabpanel" aria-labelledby="tab-btn-password">
-    <div class="btn-toggle-group">
-      <button type="button" id="p-toggle-lower" class="btn-toggle active" aria-pressed="true">Lower</button>
-      <button type="button" id="p-toggle-upper" class="btn-toggle active" aria-pressed="true">Upper</button>
-      <button type="button" id="p-toggle-numbers" class="btn-toggle active" aria-pressed="true">Numbers</button>
-      <button type="button" id="p-toggle-symbols" class="btn-toggle active" aria-pressed="true">Symbols</button>
+  <div class="content-area no-print" id="tab-update" role="tabpanel" aria-labelledby="tab-btn-update">
+    <div id="update-interface">
+      <div class="segmented-control" id="update-mode-control" style="margin-bottom: 20px;">
+        <button type="button" class="seg-btn" data-upd-mode="backup" id="upd-mode-backup">Backup</button>
+        <button type="button" class="seg-btn active" data-upd-mode="update" id="upd-mode-update">Update</button>
+      </div>
+
+      <div id="update-backup-panel" style="display: none;">
+        <button type="button" class="btn-backup-primary" id="u-btn-backup-current" style="margin-top: 0;">Backup</button>
+      </div>
+
+      <div id="update-load-panel">
+        <div class="file-upload-wrapper">
+          <label for="update-file" class="file-upload-label">Choose File</label>
+          <input type="file" id="update-file" accept=".hf" style="display: none;">
+          <span id="update-file-name" style="text-align: center; margin-top: 8px; display: block; font-size: 12px; color: var(--text-muted);"></span>
+        </div>
+        <div id="update-preview" style="display: none;">
+          <div class="status-message" id="update-status-msg" style="display: block;"></div>
+          <div class="about-section" style="margin-top: 15px;">
+            <p><strong>Preview:</strong></p>
+            <div class="preview-list" id="update-preview-list"></div>
+          </div>
+          <div class="about-section">
+            <p><strong>Select items to update:</strong></p>
+            <div class="checkbox-group" style="padding-left: 0;">
+              <label class="checkbox-item" id="label-upd-metadata"><input type="checkbox" id="upd-metadata"><span>Metadata</span></label>
+              <label class="checkbox-item" id="label-upd-email"><input type="checkbox" id="upd-email"><span>Email</span></label>
+              <label class="checkbox-item" id="label-upd-telephone"><input type="checkbox" id="upd-telephone"><span>Telephone</span></label>
+              <label class="checkbox-item" id="label-upd-username"><input type="checkbox" id="upd-username"><span>Username</span></label>
+              <label class="checkbox-item" id="label-upd-password"><input type="checkbox" id="upd-password"><span>Password</span></label>
+              <div id="dynamic-extra-checkboxes" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+          </div>
+          <button type="button" id="btn-do-update" class="btn-action" style="width: 100%; margin-top: 10px; background-color: var(--success-green); color: #fff; border-color: var(--success-green);" disabled>Load</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="update-list-container" style="margin-top: 20px; display: none;">
+      <button type="button" class="btn-generate" id="u-btn-generate-batch" style="margin-top: 0; margin-bottom: 15px;">Generate New Credentials</button>
+      
+      <div class="filter-container">
+        <input type="text" id="u-filter-input" class="text-input" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Filter update credentials">
+        <div class="filter-actions">
+          <button type="button" class="btn-action" id="u-clear-filter" style="flex: 1;">Clear Filter</button>
+          <button type="button" class="btn-action" id="u-changed-only-btn" style="flex: 1;">Changed Only</button>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button type="button" class="btn-cancel-update" id="f-btn-cancel-update">Cancel</button>
+        <button type="button" class="btn-update-file" id="f-btn-update-file">Update</button>
+      </div>
+
+      <div id="upd-actionButtons" class="action-buttons-group show">
+        <button type="button" class="btn-action" data-action="copy-all" data-tab="fuse">Copy All</button>
+        <button type="button" class="btn-action" data-action="export" data-tab="fuse">Export CSV</button>
+        <button type="button" class="btn-action" data-action="export-txt" data-tab="fuse">Export TXT</button>
+        <button type="button" class="btn-action" data-action="print" data-tab="fuse">Print PDF</button>
+      </div>
+
+      <div class="password-list" id="update-list"></div>
+    </div>
+  </div>
+
+  <div class="content-area no-print" id="tab-extra" role="tabpanel" aria-labelledby="tab-btn-extra">
+    <div class="input-row">
+      <label for="extra-target">Target Number:</label>
+      <div class="input-control">
+        <input type="number" id="extra-target" value="1" min="1" max="50" style="width: 80px;">
+      </div>
+    </div>
+    <div class="btn-toggle-group" id="extra-type-group">
+      <button type="button" class="btn-toggle active" data-type="Number">Number</button>
+      <button type="button" class="btn-toggle" data-type="Text">Text</button>
     </div>
     <div class="form-group">
-      <label for="p-exclude">Exclude Characters:</label>
-      <input type="text" id="p-exclude" class="text-input" value="" maxlength="50" autocomplete="off" spellcheck="false" autocapitalize="off" autocorrect="off">
+      <label for="extra-label">Label:</label>
+      <input type="text" id="extra-label" class="text-input" maxlength="50" autocomplete="off">
     </div>
-    <div class="checkbox-group">
-      <label class="checkbox-item" id="p-label-similar">
-        <input type="checkbox" id="p-excludeSimilar" checked>
-        <span>Exclude similar characters</span>
-      </label>
-      <label class="checkbox-item" id="p-label-require">
-        <input type="checkbox" id="p-requireEach" checked>
-        <span>Require at least one of each selected type</span>
-      </label>
+    <div class="form-group">
+      <label for="extra-value">Value:</label>
+      <input type="text" id="extra-value" class="text-input" maxlength="2048" autocomplete="off" inputmode="numeric">
     </div>
-    <div class="input-row">
-      <label for="p-count">Number of Passwords:</label>
-      <div class="input-control">
-        <button type="button" class="stepper-btn" data-target="p-count" data-delta="-1">-</button>
-        <input type="number" id="p-count" value="1" min="1" max="50">
-        <button type="button" class="stepper-btn" data-target="p-count" data-delta="1">+</button>
-      </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button type="button" class="btn-generate" id="btn-apply-extra" style="margin-top: 0;">Apply</button>
     </div>
-    <div class="input-row">
-      <label for="p-length">Password Length:</label>
-      <div class="input-control">
-        <button type="button" class="stepper-btn" data-target="p-length" data-delta="-1">-</button>
-        <input type="number" id="p-length" value="20" min="8" max="50">
-        <button type="button" class="stepper-btn" data-target="p-length" data-delta="1">+</button>
-      </div>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <button type="button" class="btn-action" id="btn-backup-selected" style="width: 100%;">Backup Selected</button>
     </div>
-    <button type="button" class="btn-generate" id="p-btn-generate">Generate Passwords</button>
-    <div id="p-actionButtons" class="action-buttons-group">
-      <button type="button" class="btn-action" data-action="copy-all" data-tab="password">Copy All</button>
-      <button type="button" class="btn-action" data-action="export" data-tab="password">Export CSV</button>
-      <button type="button" class="btn-action" data-action="export-txt" data-tab="password">Export TXT</button>
-      <button type="button" class="btn-action" data-action="print" data-tab="password">Print PDF</button>
-    </div>
-    <div class="password-list" id="p-list"></div>
   </div>
 </div>
 
@@ -772,38 +844,6 @@
   </div>
 </div>
 
-<div class="modal-overlay no-print" id="backupModal" aria-hidden="true">
-  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
-    <div class="modal-header">
-      <div class="modal-title" id="backupModalTitle">Update</div>
-      <button type="button" class="modal-close" id="btn-backup-close" aria-label="Close">×</button>
-    </div>
-    <div class="form-group" style="margin-top: 5px;">
-      <button type="button" id="update-file-trigger" class="btn-action" style="width: 100%; margin-bottom: 0;">Choose File</button>
-      <input type="file" id="update-file" accept=".hf" style="display: none;">
-      <span id="update-file-name" style="text-align: center; margin-top: 8px; display: block; font-size: 12px; color: var(--text-muted);"></span>
-    </div>
-    <div id="update-preview" style="display: none;">
-      <div class="status-message" id="update-status-msg" style="display: block;"></div>
-      <div class="about-section" style="margin-top: 15px;">
-        <p><strong>Preview:</strong></p>
-        <div class="preview-list" id="update-preview-list"></div>
-      </div>
-      <div class="about-section">
-        <p><strong>Select items to update:</strong></p>
-        <div class="checkbox-group" style="padding-left: 0;">
-          <label class="checkbox-item" id="label-upd-metadata"><input type="checkbox" id="upd-metadata"><span>Metadata</span></label>
-          <label class="checkbox-item" id="label-upd-email"><input type="checkbox" id="upd-email"><span>Email</span></label>
-          <label class="checkbox-item" id="label-upd-telephone"><input type="checkbox" id="upd-telephone"><span>Telephone</span></label>
-          <label class="checkbox-item" id="label-upd-username"><input type="checkbox" id="upd-username"><span>Username</span></label>
-          <label class="checkbox-item" id="label-upd-password"><input type="checkbox" id="upd-password"><span>Password</span></label>
-        </div>
-      </div>
-      <button type="button" id="btn-do-update" class="btn-action" style="width: 100%; margin-top: 10px; background-color: var(--success-green); color: #fff; border-color: var(--success-green);" disabled>Load</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-overlay no-print" id="confirmModal" aria-hidden="true">
   <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" style="max-width: 350px; padding: 20px;">
     <div class="modal-header" style="border-bottom: none; margin-bottom: 10px; padding-bottom: 0; justify-content: center;">
@@ -815,6 +855,26 @@
     <div class="modal-action-row">
       <button type="button" class="btn-action" id="btn-confirm-cancel">Cancel</button>
       <button type="button" class="btn-action primary" id="btn-confirm-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay no-print" id="passwordModal" aria-hidden="true">
+  <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle" style="max-width: 350px; padding: 20px;">
+    <div class="modal-header" style="border-bottom: none; margin-bottom: 10px; padding-bottom: 0; justify-content: center;">
+      <div class="modal-title" id="passwordModalTitle">Password Required</div>
+    </div>
+    <div class="form-group" style="margin-bottom: 20px;">
+      <div class="password-input-wrapper">
+        <input type="password" id="passwordInput" class="text-input" minlength="6" maxlength="50" autocomplete="off" aria-label="Password">
+        <button type="button" class="eye-btn" id="togglePasswordVisibility" aria-label="Show password">
+          <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-action-row">
+      <button type="button" class="btn-action" id="btn-password-cancel">Cancel</button>
+      <button type="button" class="btn-action primary" id="btn-password-ok">OK</button>
     </div>
   </div>
 </div>
@@ -852,6 +912,17 @@
       <input type="text" id="edit-single-input" class="text-input" maxlength="50" autocomplete="off" spellcheck="false">
     </div>
 
+    <div id="edit-extra-group" style="display: none; margin-bottom: 15px;">
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>Label</label>
+        <input type="text" id="edit-extra-label-input" class="text-input" maxlength="50" autocomplete="off">
+      </div>
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Value</label>
+        <input type="text" id="edit-extra-value-input" class="text-input" maxlength="2048" autocomplete="off">
+      </div>
+    </div>
+
     <div class="modal-action-row">
       <button type="button" class="btn-action" id="btn-edit-cancel">Cancel</button>
       <button type="button" class="btn-action primary" id="btn-edit-ok">OK</button>
@@ -877,7 +948,11 @@
   const VALID_RATINGS = { cool:1, amazing:1, epic:1, weak:1, fair:1, strong:1, very:1 };
 
   const BACKUP_EXTENSION = '.hf';
-  const BACKUP_PASSPHRASE = 'hijiforge-backup-v1';
+  const LEGACY_BACKUP_PASSPHRASE = 'hijiforge-backup-v1';
+  const LEGACY_ITERATIONS = 100000;
+  const CURRENT_ITERATIONS = 600000;
+  const MAX_ITERATIONS = 2000000;
+  const PENDING_UPDATE_KEY = 'hijiforgePendingUpdate';
 
   const PREFS_KEY = 'hijiforgePrefs';
   const SESSION_KEY = 'hijiforgeSession';
@@ -910,8 +985,7 @@
   let hasGeneratedUpdate = false;
   let updateFormSnapshot = null;
 
-  let changedFuse = { username: new Set(), password: new Set(), metadata: new Set() };
-  let batchUpdateDone = false;
+  let changedFuse = { username: new Set(), password: new Set(), metadata: new Set(), extra: new Set() };
 
   let idleArmed = false;
   let idleRemainingMs = 0;
@@ -922,9 +996,14 @@
 
   let currentEditType = null;
   let currentEditIndex = -1;
+  let currentEditExtraIndex = -1;
 
-  let currentFilterText = '';
   let isChangedOnly = false;
+
+  let passwordPromptResolve = null;
+  let passwordPromptOpts = null;
+  let extraTypeActive = 'Number';
+  let updateSubMode = 'update';
 
   function escapeHTML(str) {
     if (str == null) return '';
@@ -998,11 +1077,11 @@
     return bytes;
   }
 
-  async function deriveBackupKey(salt) {
+  async function deriveBackupKey(salt, passphrase, iterations) {
     const enc = new TextEncoder();
     const keyMaterial = await window.crypto.subtle.importKey(
       "raw",
-      enc.encode(BACKUP_PASSPHRASE),
+      enc.encode(passphrase),
       { name: "PBKDF2" },
       false,
       ["deriveBits", "deriveKey"]
@@ -1011,7 +1090,7 @@
       {
         name: "PBKDF2",
         salt: salt,
-        iterations: 100000,
+        iterations: iterations,
         hash: "SHA-256"
       },
       keyMaterial,
@@ -1021,11 +1100,11 @@
     );
   }
 
-  async function encryptData(text) {
+  async function encryptData(text, passphrase) {
     const enc = new TextEncoder();
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
     const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const key = await deriveBackupKey(salt);
+    const key = await deriveBackupKey(salt, passphrase, CURRENT_ITERATIONS);
     const encrypted = await window.crypto.subtle.encrypt(
       { name: "AES-GCM", iv: iv },
       key,
@@ -1038,12 +1117,19 @@
     };
   }
 
-  async function decryptData(payload) {
+  async function decryptData(payload, passphrase) {
     const salt = base64ToArrayBuffer(payload.salt);
     const iv = base64ToArrayBuffer(payload.iv);
     const data = base64ToArrayBuffer(payload.data);
+    if (salt.length !== 16 || iv.length !== 12) {
+      throw new Error('Invalid backup');
+    }
+    let iterations = LEGACY_ITERATIONS;
+    if (typeof payload.iterations === 'number' && payload.iterations > 0) {
+      iterations = Math.min(Math.max(payload.iterations, LEGACY_ITERATIONS), MAX_ITERATIONS);
+    }
 
-    const key = await deriveBackupKey(salt);
+    const key = await deriveBackupKey(salt, passphrase, iterations);
     const decrypted = await window.crypto.subtle.decrypt(
       { name: "AES-GCM", iv: iv },
       key,
@@ -1067,6 +1153,20 @@
     });
     const randOpts = document.getElementById('f-randomize-options');
     if (randOpts) randOpts.style.display = source === 'random' ? 'block' : 'none';
+    const btnGen = document.getElementById('f-btn-generate');
+    if (btnGen) btnGen.textContent = source === 'existing' ? 'Combine' : 'Generate Fused';
+  }
+
+  function setUpdateSubMode(mode) {
+    updateSubMode = mode === 'backup' ? 'backup' : 'update';
+    document.querySelectorAll('#update-mode-control .seg-btn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.updMode === updateSubMode);
+    });
+    const backupPanel = document.getElementById('update-backup-panel');
+    const loadPanel = document.getElementById('update-load-panel');
+    if (backupPanel) backupPanel.style.display = updateSubMode === 'backup' ? 'block' : 'none';
+    if (loadPanel) loadPanel.style.display = updateSubMode === 'update' ? 'block' : 'none';
+    updateBackupUI();
   }
 
   function toggleManualUsernameInput(isChecked) {
@@ -1152,6 +1252,36 @@
     });
   }
 
+  function showPasswordPrompt(title, opts) {
+    return new Promise((resolve) => {
+      passwordPromptResolve = resolve;
+      passwordPromptOpts = opts || null;
+
+      lastFocusedElement = document.activeElement || document.body;
+
+      const modal = document.getElementById('passwordModal');
+      const titleEl = document.getElementById('passwordModalTitle');
+      const input = document.getElementById('passwordInput');
+      const btnOk = document.getElementById('btn-password-ok');
+      const btnCancel = document.getElementById('btn-password-cancel');
+
+      titleEl.textContent = title;
+      input.value = '';
+      input.type = 'password';
+      input.disabled = false;
+      input.classList.remove('invalid');
+      btnOk.disabled = false;
+      btnCancel.disabled = false;
+
+      const icon = document.getElementById('eye-icon');
+      icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      setTimeout(() => input.focus(), 50);
+    });
+  }
+
   function isIdleProtectionActive() {
     return isUpdateModeActive
         || usernameResults.length > 0
@@ -1213,7 +1343,7 @@
 
   function showIdleStatus() {
     idleStatusActive = true;
-    setStatus('system', 'Browser was refreshed after inactivity to protect displayed credentials.', 'warning', true);
+    setStatus('system', 'Browser was refreshed after inactivity to protect displayed credentials.', 'warning');
   }
 
   function hideIdleStatus() {
@@ -1252,14 +1382,123 @@
     setCheckboxAvailability('upd-username', 'label-upd-username', hasU);
     setCheckboxAvailability('upd-password', 'label-upd-password', hasP);
 
+    const dynamicExtras = document.querySelectorAll('.upd-extra-checkbox');
+    dynamicExtras.forEach(cb => {
+        cb.disabled = false;
+    });
+
     const ids = ['upd-metadata', 'upd-email', 'upd-telephone', 'upd-username', 'upd-password'];
-    const anyChecked = ids.some(function(id) {
+    let anyChecked = ids.some(function(id) {
       const el = document.getElementById(id);
       return el && el.checked;
     });
 
+    if (!anyChecked) {
+        anyChecked = Array.from(dynamicExtras).some(cb => cb.checked);
+    }
+
     const btn = document.getElementById('btn-do-update');
     if (btn) btn.disabled = !anyChecked;
+
+    if (!isUpdateModeActive) savePendingUpdateState();
+  }
+
+  function savePendingUpdateState() {
+    if (!updateState) return;
+    if (isUpdateModeActive) return;
+    try {
+        const extras = {};
+        document.querySelectorAll('.upd-extra-checkbox').forEach(cb => {
+            extras[cb.value] = cb.checked;
+        });
+        const cs = {
+            metadata: document.getElementById('upd-metadata').checked,
+            email: document.getElementById('upd-email').checked,
+            phone: document.getElementById('upd-telephone').checked,
+            username: document.getElementById('upd-username').checked,
+            password: document.getElementById('upd-password').checked,
+            extras: extras
+        };
+        sessionStorage.setItem(PENDING_UPDATE_KEY, JSON.stringify({
+            updateState: updateState,
+            fileName: document.getElementById('update-file-name').textContent || '',
+            checkboxStates: cs
+        }));
+    } catch (e) {}
+  }
+
+  function clearPendingUpdateState() {
+    try { sessionStorage.removeItem(PENDING_UPDATE_KEY); } catch (e) {}
+  }
+
+  function createExtraCheckboxes(extraKeys, preCheckedKeys) {
+    const extraContainer = document.getElementById('dynamic-extra-checkboxes');
+    if (!extraContainer) return;
+    extraContainer.innerHTML = '';
+    extraKeys.forEach(key => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-item';
+        const isChecked = preCheckedKeys && preCheckedKeys.has(key) ? ' checked' : '';
+        label.innerHTML = `<input type="checkbox" class="upd-extra-checkbox" value="${escapeHTML(key)}"${isChecked}><span>${escapeHTML(key)}</span>`;
+        extraContainer.appendChild(label);
+        const input = label.querySelector('input');
+        input.addEventListener('change', updateUpdateModeAvailability);
+    });
+  }
+
+  function restorePendingUpdate() {
+    if (isUpdateModeActive) return false;
+    let pending = null;
+    try {
+        const s = sessionStorage.getItem(PENDING_UPDATE_KEY);
+        if (!s) return false;
+        pending = JSON.parse(s);
+    } catch (e) { return false; }
+
+    if (!pending || !pending.updateState || !Array.isArray(pending.updateState.fuse) || pending.updateState.fuse.length === 0) return false;
+
+    updateState = pending.updateState;
+
+    const preview = document.getElementById('update-preview');
+    preview.style.display = 'block';
+
+    const status = document.getElementById('update-status-msg');
+    status.className = 'status-message success';
+    status.style.display = 'block';
+    const exportedAt = updateState.exportedAt ? new Date(updateState.exportedAt) : null;
+    const ageStr = exportedAt ? formatAge(exportedAt) : 'unknown date';
+    status.textContent = `${updateState.fuse.length} credentials • ${ageStr}`;
+
+    document.getElementById('update-file-name').textContent = pending.fileName || '(restored)';
+
+    const list = document.getElementById('update-preview-list');
+    list.innerHTML = updateState.fuse.map((item, i) => {
+        const name = [item.firstName, item.lastName].filter(Boolean).join(' ');
+        return `<div>${i + 1}. ${escapeHTML(item.appName)}${name ? ' — ' + escapeHTML(name) : ''}</div>`;
+    }).join('');
+
+    const extraKeys = new Set();
+    updateState.fuse.forEach(item => {
+        if (item.extra) item.extra.forEach(e => extraKeys.add(e.key));
+    });
+
+    const preChecked = new Set();
+    if (pending.checkboxStates && pending.checkboxStates.extras) {
+        Object.keys(pending.checkboxStates.extras).forEach(k => {
+            if (pending.checkboxStates.extras[k]) preChecked.add(k);
+        });
+    }
+    createExtraCheckboxes(extraKeys, preChecked);
+
+    const cs = pending.checkboxStates || {};
+    document.getElementById('upd-metadata').checked = !!cs.metadata;
+    document.getElementById('upd-email').checked = !!cs.email;
+    document.getElementById('upd-telephone').checked = !!cs.phone;
+    document.getElementById('upd-username').checked = !!cs.username;
+    document.getElementById('upd-password').checked = !!cs.password;
+
+    updateUpdateModeAvailability();
+    return true;
   }
 
   function validateEditField() {
@@ -1289,85 +1528,119 @@
     if (tab === 'name') document.getElementById('edit-first-input').focus();
   }
 
-  function openEditModal(type, index) {
-    currentEditType = type;
-    currentEditIndex = index;
-    lastFocusedElement = document.activeElement || document.body;
-    const fuseItem = fuseResults[index];
-    const modal = document.getElementById('editMetadataModal');
-    const title = document.getElementById('editMetadataTitle');
-    const btnOk = document.getElementById('btn-edit-ok');
+  function openEditModal(type, index, extraIdx) {
+    try {
+      currentEditType = type;
+      currentEditIndex = index;
+      currentEditExtraIndex = extraIdx !== undefined ? extraIdx : -1;
+      
+      lastFocusedElement = document.activeElement || document.body;
+      const fuseItem = fuseResults[index];
+      const modal = document.getElementById('editMetadataModal');
+      const title = document.getElementById('editMetadataTitle');
+      const btnOk = document.getElementById('btn-edit-ok');
 
-    btnOk.disabled = false;
-    document.getElementById('edit-single-input').classList.remove('invalid');
+      btnOk.disabled = false;
+      document.getElementById('edit-single-input').classList.remove('invalid');
 
-    document.getElementById('edit-meta-tabs').style.display = 'none';
-    document.getElementById('edit-content-platform').style.display = 'none';
-    document.getElementById('edit-content-name').style.display = 'none';
-    document.getElementById('edit-single-group').style.display = 'none';
+      document.getElementById('edit-meta-tabs').style.display = 'none';
+      document.getElementById('edit-content-platform').style.display = 'none';
+      document.getElementById('edit-content-name').style.display = 'none';
+      document.getElementById('edit-single-group').style.display = 'none';
+      document.getElementById('edit-extra-group').style.display = 'none';
 
-    if (type === 'metadata') {
-      title.textContent = 'Edit Metadata';
-      document.getElementById('edit-meta-tabs').style.display = 'flex';
-      document.getElementById('edit-appName-input').value = fuseItem.appName || '';
-      document.getElementById('edit-first-input').value = fuseItem.firstName || '';
-      document.getElementById('edit-last-input').value = fuseItem.lastName || '';
-      switchEditTab('platform');
-    } else if (type === 'email') {
-      title.textContent = 'Edit Email';
-      document.getElementById('edit-single-group').style.display = 'block';
-      const singleInput = document.getElementById('edit-single-input');
-      singleInput.value = fuseItem.email || '';
-      singleInput.type = 'text';
-      singleInput.maxLength = 50;
-      singleInput.setAttribute('inputmode', 'email');
-      validateEditField();
-    } else if (type === 'phone') {
-      title.textContent = 'Edit Phone';
-      document.getElementById('edit-single-group').style.display = 'block';
-      const singleInput = document.getElementById('edit-single-input');
-      singleInput.value = fuseItem.phone || '';
-      singleInput.type = 'tel';
-      singleInput.maxLength = 50;
-      singleInput.setAttribute('inputmode', 'tel');
-    } else if (type === 'username') {
-      title.textContent = 'Edit Username';
-      document.getElementById('edit-single-group').style.display = 'block';
-      const singleInput = document.getElementById('edit-single-input');
-      singleInput.value = fuseItem.username || '';
-      singleInput.type = 'text';
-      singleInput.maxLength = 50;
-      singleInput.setAttribute('inputmode', 'text');
-    } else if (type === 'password') {
-      title.textContent = 'Edit Password';
-      document.getElementById('edit-single-group').style.display = 'block';
-      const singleInput = document.getElementById('edit-single-input');
-      singleInput.value = fuseItem.password || '';
-      singleInput.type = 'text';
-      singleInput.maxLength = 50;
-      singleInput.setAttribute('inputmode', 'text');
-    }
-
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-
-    setTimeout(() => {
       if (type === 'metadata') {
-        document.getElementById('edit-appName-input').focus();
-        const len = document.getElementById('edit-appName-input').value.length;
-        document.getElementById('edit-appName-input').setSelectionRange(len, len);
-      } else {
+        title.textContent = 'Edit Metadata';
+        document.getElementById('edit-meta-tabs').style.display = 'flex';
+        document.getElementById('edit-appName-input').value = fuseItem.appName || '';
+        document.getElementById('edit-first-input').value = fuseItem.firstName || '';
+        document.getElementById('edit-last-input').value = fuseItem.lastName || '';
+        switchEditTab('platform');
+      } else if (type === 'email') {
+        title.textContent = 'Edit Email';
+        document.getElementById('edit-single-group').style.display = 'block';
         const singleInput = document.getElementById('edit-single-input');
-        singleInput.focus();
-        const len = singleInput.value.length;
-        singleInput.setSelectionRange(len, len);
+        singleInput.value = fuseItem.email || '';
+        singleInput.type = 'text';
+        singleInput.maxLength = 50;
+        singleInput.setAttribute('inputmode', 'email');
+        validateEditField();
+      } else if (type === 'phone') {
+        title.textContent = 'Edit Phone';
+        document.getElementById('edit-single-group').style.display = 'block';
+        const singleInput = document.getElementById('edit-single-input');
+        singleInput.value = fuseItem.phone || '';
+        singleInput.type = 'tel';
+        singleInput.maxLength = 50;
+        singleInput.setAttribute('inputmode', 'tel');
+      } else if (type === 'username') {
+        title.textContent = 'Edit Username';
+        document.getElementById('edit-single-group').style.display = 'block';
+        const singleInput = document.getElementById('edit-single-input');
+        singleInput.value = fuseItem.username || '';
+        singleInput.type = 'text';
+        singleInput.maxLength = 50;
+        singleInput.setAttribute('inputmode', 'text');
+      } else if (type === 'password') {
+        title.textContent = 'Edit Password';
+        document.getElementById('edit-single-group').style.display = 'block';
+        const singleInput = document.getElementById('edit-single-input');
+        singleInput.value = fuseItem.password || '';
+        singleInput.type = 'text';
+        singleInput.maxLength = 50;
+        singleInput.setAttribute('inputmode', 'text');
+      } else if (type === 'extra') {
+        if (fuseItem.extra && fuseItem.extra[currentEditExtraIndex]) {
+          const ext = fuseItem.extra[currentEditExtraIndex];
+          title.textContent = 'Edit ' + (ext.key || 'Extra');
+          document.getElementById('edit-extra-group').style.display = 'block';
+          document.getElementById('edit-extra-label-input').value = ext.key || '';
+          const valInput = document.getElementById('edit-extra-value-input');
+          valInput.value = ext.value || '';
+          if (ext.type === 'Number') {
+            valInput.setAttribute('inputmode', 'numeric');
+            valInput.value = valInput.value.replace(/[^0-9]/g, '');
+          } else {
+            valInput.setAttribute('inputmode', 'text');
+          }
+        } else {
+          title.textContent = 'Edit Extra';
+          document.getElementById('edit-extra-group').style.display = 'block';
+          document.getElementById('edit-extra-label-input').value = '';
+          const valInput = document.getElementById('edit-extra-value-input');
+          valInput.value = '';
+          valInput.setAttribute('inputmode', 'text');
+        }
       }
-    }, 50);
+
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+
+      setTimeout(() => {
+        if (type === 'metadata') {
+          document.getElementById('edit-appName-input').focus();
+          const len = document.getElementById('edit-appName-input').value.length;
+          document.getElementById('edit-appName-input').setSelectionRange(len, len);
+        } else if (type === 'extra') {
+          document.getElementById('edit-extra-label-input').focus();
+          const len = document.getElementById('edit-extra-label-input').value.length;
+          document.getElementById('edit-extra-label-input').setSelectionRange(len, len);
+        } else {
+          const singleInput = document.getElementById('edit-single-input');
+          singleInput.focus();
+          const len = singleInput.value.length;
+          singleInput.setSelectionRange(len, len);
+        }
+      }, 50);
+    } catch (e) {
+      console.error("Error opening modal", e);
+    }
   }
 
   function closeEditModal() {
     currentEditType = null;
     currentEditIndex = -1;
+    currentEditExtraIndex = -1;
     document.getElementById('editMetadataModal').classList.remove('show');
     document.getElementById('editMetadataModal').setAttribute('aria-hidden', 'true');
     if (lastFocusedElement && lastFocusedElement !== document.body) {
@@ -1467,90 +1740,115 @@
   }
 
   function saveEdit() {
-    if (currentEditIndex === -1) return;
-    const fuseItem = fuseResults[currentEditIndex];
-    if (currentEditType === 'metadata') {
-      fuseItem.appName = normalizePlatformName(document.getElementById('edit-appName-input').value);
-      if (!fuseItem.appName) fuseItem.appName = 'Unknown';
-      fuseItem.firstName = formatPersonName(sanitizeName(document.getElementById('edit-first-input').value));
-      fuseItem.lastName = formatPersonName(sanitizeName(document.getElementById('edit-last-input').value));
-      changedFuse.metadata.add(currentEditIndex);
-    } else if (currentEditType === 'email') {
-      fuseItem.email = document.getElementById('edit-single-input').value.trim();
-      changedFuse.metadata.add(currentEditIndex);
-    } else if (currentEditType === 'phone') {
-      fuseItem.phone = sanitizePhone(document.getElementById('edit-single-input').value).trim();
-      changedFuse.metadata.add(currentEditIndex);
-    } else if (currentEditType === 'username') {
-      const oldU = fuseItem.username || '';
-      const newU = sanitizeUsername(document.getElementById('edit-single-input').value).trim();
-      fuseItem.username = newU;
-      fuseItem.usernameOpt = newU ? 'manual' : 'none';
+    try {
+      if (currentEditIndex === -1) return;
+      const fuseItem = fuseResults[currentEditIndex];
+      if (currentEditType === 'metadata') {
+        fuseItem.appName = normalizePlatformName(document.getElementById('edit-appName-input').value);
+        if (!fuseItem.appName) fuseItem.appName = 'Unknown';
+        fuseItem.firstName = formatPersonName(sanitizeName(document.getElementById('edit-first-input').value));
+        fuseItem.lastName = formatPersonName(sanitizeName(document.getElementById('edit-last-input').value));
+        changedFuse.metadata.add(currentEditIndex);
+      } else if (currentEditType === 'email') {
+        fuseItem.email = document.getElementById('edit-single-input').value.trim();
+        changedFuse.metadata.add(currentEditIndex);
+      } else if (currentEditType === 'phone') {
+        fuseItem.phone = sanitizePhone(document.getElementById('edit-single-input').value).trim();
+        changedFuse.metadata.add(currentEditIndex);
+      } else if (currentEditType === 'username') {
+        const oldU = fuseItem.username || '';
+        const newU = sanitizeUsername(document.getElementById('edit-single-input').value).trim();
+        fuseItem.username = newU;
+        fuseItem.usernameOpt = newU ? 'manual' : 'none';
 
-      if (newU) {
-        const oldFmt = fuseItem.uFormat;
-        const newFmt = analyzeStringFormat(newU, true);
-        if (oldFmt) {
-          const oldHasAsc = /[bdfhijklt]/.test(oldU);
-          const newHasAsc = /[bdfhijklt]/.test(newU);
-          const oldHasDesc = /[gjpqy]/.test(oldU);
-          const newHasDesc = /[gjpqy]/.test(newU);
+        if (newU) {
+          const oldFmt = fuseItem.uFormat;
+          const newFmt = analyzeStringFormat(newU, true);
+          if (oldFmt) {
+            const oldHasAsc = /[bdfhijklt]/.test(oldU);
+            const newHasAsc = /[bdfhijklt]/.test(newU);
+            const oldHasDesc = /[gjpqy]/.test(oldU);
+            const newHasDesc = /[gjpqy]/.test(newU);
 
-          if (oldHasAsc !== newHasAsc) {
-            newFmt.excludeAsc = !newHasAsc;
-          } else {
-            newFmt.excludeAsc = oldFmt.excludeAsc !== false;
-          }
-          if (oldHasDesc !== newHasDesc) {
-            newFmt.excludeDesc = !newHasDesc;
-          } else {
-            newFmt.excludeDesc = oldFmt.excludeDesc !== false;
-          }
-          newFmt.unique = oldFmt.unique !== false;
-          newFmt.excludeSimilar = oldFmt.excludeSimilar !== false;
-          newFmt.requireEach = oldFmt.requireEach !== false;
-        }
-        fuseItem.uFormat = newFmt;
-      } else {
-        fuseItem.uFormat = null;
-      }
-
-      changedFuse.username.add(currentEditIndex);
-      rebuildResultsFromFuse();
-      renderResults('username');
-    } else if (currentEditType === 'password') {
-      const oldP = fuseItem.password || '';
-      const newP = sanitizePassword(document.getElementById('edit-single-input').value);
-      fuseItem.password = newP;
-      fuseItem.passwordOpt = newP ? 'manual' : 'none';
-
-      if (newP) {
-        const oldFmt = fuseItem.pFormat;
-        const newFmt = analyzeStringFormat(newP, false);
-        if (oldFmt) {
-          const oldHasSimilar = /[0O1lI|]/.test(oldP);
-          const newHasSimilar = /[0O1lI|]/.test(newP);
-
-          if (oldHasSimilar !== newHasSimilar) {
-            newFmt.excludeSimilar = !newHasSimilar;
-          } else {
+            if (oldHasAsc !== newHasAsc) {
+              newFmt.excludeAsc = !newHasAsc;
+            } else {
+              newFmt.excludeAsc = oldFmt.excludeAsc !== false;
+            }
+            if (oldHasDesc !== newHasDesc) {
+              newFmt.excludeDesc = !newHasDesc;
+            } else {
+              newFmt.excludeDesc = oldFmt.excludeDesc !== false;
+            }
+            newFmt.unique = oldFmt.unique !== false;
             newFmt.excludeSimilar = oldFmt.excludeSimilar !== false;
+            newFmt.requireEach = oldFmt.requireEach !== false;
+            if (typeof oldFmt.customNumbers === 'string') newFmt.customNumbers = oldFmt.customNumbers;
+            if (typeof oldFmt.exclude === 'string') newFmt.exclude = oldFmt.exclude;
+            if (typeof oldFmt.minChars === 'number') newFmt.minChars = oldFmt.minChars;
           }
-          newFmt.requireEach = oldFmt.requireEach !== false;
+          fuseItem.uFormat = newFmt;
+        } else {
+          fuseItem.uFormat = null;
         }
-        fuseItem.pFormat = newFmt;
-      } else {
-        fuseItem.pFormat = null;
-      }
 
-      changedFuse.password.add(currentEditIndex);
-      rebuildResultsFromFuse();
-      renderResults('password');
+        changedFuse.username.add(currentEditIndex);
+        rebuildResultsFromFuse();
+        renderResults('username');
+      } else if (currentEditType === 'password') {
+        const oldP = fuseItem.password || '';
+        const newP = sanitizePassword(document.getElementById('edit-single-input').value);
+        fuseItem.password = newP;
+        fuseItem.passwordOpt = newP ? 'manual' : 'none';
+
+        if (newP) {
+          const oldFmt = fuseItem.pFormat;
+          const newFmt = analyzeStringFormat(newP, false);
+          if (oldFmt) {
+            const oldHasSimilar = /[0O1lI|]/.test(oldP);
+            const newHasSimilar = /[0O1lI|]/.test(newP);
+
+            if (oldHasSimilar !== newHasSimilar) {
+              newFmt.excludeSimilar = !newHasSimilar;
+            } else {
+              newFmt.excludeSimilar = oldFmt.excludeSimilar !== false;
+            }
+            newFmt.requireEach = oldFmt.requireEach !== false;
+            if (typeof oldFmt.exclude === 'string') newFmt.exclude = oldFmt.exclude;
+          }
+          fuseItem.pFormat = newFmt;
+        } else {
+          fuseItem.pFormat = null;
+        }
+
+        changedFuse.password.add(currentEditIndex);
+        rebuildResultsFromFuse();
+        renderResults('password');
+      } else if (currentEditType === 'extra') {
+        const newKey = document.getElementById('edit-extra-label-input').value.trim();
+        let newValue = document.getElementById('edit-extra-value-input').value.trim();
+        const existingExt = fuseItem.extra[currentEditExtraIndex];
+        
+        if (existingExt && existingExt.type === 'Number') {
+            newValue = newValue.replace(/[^0-9]/g, '');
+        }
+
+        if (newKey && newValue) {
+            if (!fuseItem.extra) fuseItem.extra = [];
+            if (!fuseItem.extra[currentEditExtraIndex]) fuseItem.extra[currentEditExtraIndex] = {};
+            fuseItem.extra[currentEditExtraIndex].key = newKey;
+            fuseItem.extra[currentEditExtraIndex].value = newValue;
+            changedFuse.extra.add(currentEditIndex);
+        }
+      }
+      hasGeneratedUpdate = true;
+      closeEditModal();
+      renderResults('fuse');
+      if (isUpdateModeActive) renderResults('update');
+      saveSettings();
+    } catch (e) {
+      console.error("Error saving modal", e);
     }
-    hasGeneratedUpdate = true;
-    closeEditModal();
-    renderResults('fuse');
-    saveSettings();
   }
 
   function deleteFuseEntry(index) {
@@ -1568,17 +1866,23 @@
     changedFuse.username = shiftSet(changedFuse.username, index);
     changedFuse.password = shiftSet(changedFuse.password, index);
     changedFuse.metadata = shiftSet(changedFuse.metadata, index);
+    changedFuse.extra = shiftSet(changedFuse.extra, index);
 
     rebuildResultsFromFuse();
     hasGeneratedUpdate = true;
 
     renderResults('fuse');
+    if (isUpdateModeActive) renderResults('update');
     renderResults('username');
     renderResults('password');
     saveSettings();
   }
 
   function switchTab(tabId) {
+    if (isUpdateModeActive && !['update', 'extra'].includes(tabId)) {
+      tabId = 'update';
+    }
+    
     activeTab = tabId;
     document.documentElement.setAttribute('data-hf-tab', tabId);
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1669,6 +1973,7 @@
     clearTimeout(saveDebounceTimer); saveDebounceTimer = null;
     try { localStorage.removeItem(PREFS_KEY); } catch (e) {}
     try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(PENDING_UPDATE_KEY); } catch (e) {}
     usernameResults = []; passwordResults = []; fuseResults = [];
     savedAscState = false; savedDescState = false;
     isUpdateModeActive = false;
@@ -1679,18 +1984,20 @@
     changedFuse.username.clear();
     changedFuse.password.clear();
     changedFuse.metadata.clear();
-    batchUpdateDone = false;
+    changedFuse.extra.clear();
     themePreference = 'auto';
-    currentFilterText = '';
     isChangedOnly = false;
+    updateSubMode = 'update';
 
     document.getElementById('u-list').innerHTML = '';
     document.getElementById('p-list').innerHTML = '';
     document.getElementById('f-list').innerHTML = '';
+    document.getElementById('update-list').innerHTML = '';
     document.getElementById('print-section').innerHTML = '';
     document.getElementById('u-actionButtons').classList.remove('show');
     document.getElementById('p-actionButtons').classList.remove('show');
     document.getElementById('f-actionButtons').classList.remove('show');
+    document.getElementById('upd-actionButtons').classList.remove('show');
 
     setStatus('username', ''); setStatus('password', ''); setStatus('fuse', '');
     setStatus('system', '');
@@ -1712,20 +2019,24 @@
     isUpdateModeActive = true;
     document.getElementById('tab-btn-username').disabled = true;
     document.getElementById('tab-btn-password').disabled = true;
-    document.getElementById('tab-btn-fuse').textContent = 'Update';
-    document.getElementById('f-segmented-control').style.display = 'none';
-    document.getElementById('f-form-inputs').style.display = 'none';
-    document.getElementById('f-randomize-options').style.display = 'none';
-
-    const btnGen = document.getElementById('f-btn-generate');
-    btnGen.textContent = 'Generate New Credentials';
-    btnGen.style.display = 'block';
-
-    document.getElementById('f-update-actions').style.display = 'flex';
-    updateBackupUI();
-
-    document.getElementById('f-changed-only-btn').style.display = 'flex';
-    updateFilterVisibility();
+    document.getElementById('tab-btn-fuse').disabled = true;
+    
+    document.getElementById('update-interface').style.display = 'none';
+    document.getElementById('update-list-container').style.display = 'block';
+    
+    const genBtn = document.getElementById('u-btn-generate-batch');
+    if (genBtn) {
+      const hasRegeneratable = fuseResults.some(item => 
+        (item.uFormat && !item._lockUser) || (item.pFormat && !item._lockPass)
+      );
+      genBtn.style.display = hasRegeneratable ? 'block' : 'none';
+    }
+    
+    renderResults('update');
+    
+    if (activeTab !== 'extra') {
+        switchTab('update');
+    }
   }
 
   function unlockUI() {
@@ -1736,28 +2047,32 @@
     changedFuse.username.clear();
     changedFuse.password.clear();
     changedFuse.metadata.clear();
-    batchUpdateDone = false;
-    currentFilterText = '';
+    changedFuse.extra.clear();
     isChangedOnly = false;
 
     document.getElementById('tab-btn-username').disabled = false;
     document.getElementById('tab-btn-password').disabled = false;
-    document.getElementById('tab-btn-fuse').textContent = 'HijiFuse';
-    document.getElementById('f-segmented-control').style.display = 'flex';
-    document.getElementById('f-form-inputs').style.display = 'block';
-
-    setFuseSource(getFuseSource());
-
-    const btnGen = document.getElementById('f-btn-generate');
-    btnGen.textContent = 'Generate Fused';
-    btnGen.style.display = 'block';
-
-    document.getElementById('f-update-actions').style.display = 'none';
-    updateBackupUI();
-
+    document.getElementById('tab-btn-fuse').disabled = false;
+    
+    document.getElementById('update-interface').style.display = 'block';
+    document.getElementById('update-list-container').style.display = 'none';
+    
+    document.getElementById('update-file').value = '';
+    document.getElementById('update-file-name').textContent = '';
+    document.getElementById('update-preview').style.display = 'none';
+    document.getElementById('update-list').innerHTML = '';
+    document.getElementById('dynamic-extra-checkboxes').innerHTML = '';
+    
     document.getElementById('f-filter-input').value = '';
     document.getElementById('f-changed-only-btn').classList.remove('primary');
     document.getElementById('f-changed-only-btn').style.display = 'none';
+    document.getElementById('u-filter-input').value = '';
+    document.getElementById('u-changed-only-btn').classList.remove('primary');
+
+    setFuseSource(getFuseSource());
+    setUpdateSubMode(updateSubMode);
+
+    document.getElementById('f-btn-generate').style.display = 'block';
 
     document.querySelectorAll('.fuse-badges').forEach(el => el.remove());
 
@@ -1794,7 +2109,14 @@
       fUseManual: document.getElementById('f-use-manual').checked,
       fNoUsername: document.getElementById('f-no-username').checked,
       fNoPassword: document.getElementById('f-no-password').checked,
-      fManualUsername: document.getElementById('f-manualUsername').value
+      fManualUsername: document.getElementById('f-manualUsername').value,
+      extraTarget: document.getElementById('extra-target').value,
+      extraType: extraTypeActive,
+      extraLabel: document.getElementById('extra-label').value,
+      extraValue: document.getElementById('extra-value').value,
+      fFilter: document.getElementById('f-filter-input').value,
+      uFilter: document.getElementById('u-filter-input').value,
+      updateSubMode
     };
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); } catch (e) {}
 
@@ -1809,16 +2131,18 @@
             email: item.email, phone: item.phone, username: item.username, password: item.password,
             usernameOpt: item.usernameOpt, passwordOpt: item.passwordOpt,
             uFormat: item.uFormat || null, pFormat: item.pFormat || null,
+            extra: item.extra || [],
             _lockMeta: item._lockMeta, _lockEmail: item._lockEmail, _lockPhone: item._lockPhone,
             _lockUser: item._lockUser, _lockPass: item._lockPass
           })),
           usernameResults,
           passwordResults,
-          batchUpdateDone,
           changedFuseU: [...changedFuse.username],
           changedFuseP: [...changedFuse.password],
           changedFuseM: [...changedFuse.metadata],
-          filterText: document.getElementById('f-filter-input').value,
+          changedFuseX: [...changedFuse.extra],
+          fFilter: document.getElementById('f-filter-input').value,
+          uFilter: document.getElementById('u-filter-input').value,
           changedOnly: isChangedOnly
         }));
       } catch (e) {}
@@ -1855,7 +2179,7 @@
       if (s.themePreference) themePreference = s.themePreference;
       else themePreference = 'auto';
 
-      if (s.activeTab === 'username' || s.activeTab === 'fuse' || s.activeTab === 'password') {
+      if (['username', 'fuse', 'password', 'update', 'extra'].includes(s.activeTab)) {
         activeTab = s.activeTab;
       } else {
         activeTab = 'fuse';
@@ -1923,7 +2247,28 @@
       else fManualEl.classList.remove('invalid');
       toggleManualUsernameInput(useManual);
 
+      document.getElementById('extra-target').value = s.extraTarget || 1;
+      document.getElementById('extra-label').value = s.extraLabel || '';
+      document.getElementById('extra-value').value = s.extraValue || '';
+      extraTypeActive = s.extraType || 'Number';
+      
+      document.querySelectorAll('#extra-type-group .btn-toggle').forEach(b => {
+          b.classList.toggle('active', b.dataset.type === extraTypeActive);
+          b.setAttribute('aria-pressed', String(b.dataset.type === extraTypeActive));
+      });
+      
+      const valInput = document.getElementById('extra-value');
+      if (extraTypeActive === 'Number') {
+          valInput.setAttribute('inputmode', 'numeric');
+      } else {
+          valInput.setAttribute('inputmode', 'text');
+      }
+
+      document.getElementById('f-filter-input').value = s.fFilter || '';
+      document.getElementById('u-filter-input').value = s.uFilter || '';
+
       setFuseSource(s.fSource === 'random' ? 'random' : 'existing');
+      setUpdateSubMode(s.updateSubMode === 'backup' ? 'backup' : 'update');
 
       if (session && session.isUpdateModeActive) {
         isUpdateModeActive = true;
@@ -1932,23 +2277,22 @@
         fuseResults = session.fuseResults || [];
         usernameResults = session.usernameResults || [];
         passwordResults = session.passwordResults || [];
-        batchUpdateDone = !!session.batchUpdateDone;
         changedFuse.username = new Set(Array.isArray(session.changedFuseU) ? session.changedFuseU : []);
         changedFuse.password = new Set(Array.isArray(session.changedFuseP) ? session.changedFuseP : []);
         changedFuse.metadata = new Set(Array.isArray(session.changedFuseM) ? session.changedFuseM : []);
+        changedFuse.extra = new Set(Array.isArray(session.changedFuseX) ? session.changedFuseX : []);
 
-        currentFilterText = session.filterText || '';
+        document.getElementById('f-filter-input').value = session.fFilter || '';
+        document.getElementById('u-filter-input').value = session.uFilter || '';
         isChangedOnly = !!session.changedOnly;
-        document.getElementById('f-filter-input').value = currentFilterText;
         document.getElementById('f-changed-only-btn').classList.toggle('primary', isChangedOnly);
         document.getElementById('f-changed-only-btn').style.display = 'flex';
+        document.getElementById('u-changed-only-btn').classList.toggle('primary', isChangedOnly);
 
         lockUI();
         renderResults('fuse');
         if (usernameResults.length) renderResults('username');
         if (passwordResults.length) renderResults('password');
-        activeTab = 'fuse';
-        switchTab('fuse');
       }
     } catch (e) {}
     applyTheme();
@@ -2012,7 +2356,7 @@
     return 'success';
   }
 
-  function setStatus(type, msg, level, persist) {
+  function setStatus(type, msg, level) {
     const live = document.getElementById('notif-live');
     if (!live) return;
     if (!msg) {
@@ -2026,8 +2370,8 @@
 
   function buildPoolsUsername(fmt) {
     const isCustom = !fmt;
-    const customNumbers = isCustom ? document.getElementById('u-customNumbers').value : '';
-    const excludeChars = isCustom ? document.getElementById('u-exclude').value : '';
+    const customNumbers = isCustom ? document.getElementById('u-customNumbers').value : (fmt.customNumbers || '');
+    const excludeChars = isCustom ? document.getElementById('u-exclude').value : (fmt.exclude || '');
     const excludeAsc = isCustom ? document.getElementById('u-excludeAscenders').checked : fmt.excludeAsc;
     const excludeDesc = isCustom ? document.getElementById('u-excludeDescenders').checked : fmt.excludeDesc;
 
@@ -2074,7 +2418,7 @@
 
   function buildPoolsPassword(fmt) {
     const isCustom = !fmt;
-    const excludeChars = isCustom ? document.getElementById('p-exclude').value : '';
+    const excludeChars = isCustom ? document.getElementById('p-exclude').value : (fmt.exclude || '');
     const excludeSimilar = isCustom ? document.getElementById('p-excludeSimilar').checked : fmt.excludeSimilar;
 
     let lowerPool = (isCustom ? pOptions.lower : fmt.hasLower) ? 'abcdefghijklmnopqrstuvwxyz' : '';
@@ -2205,29 +2549,29 @@
   }
 
   function updateBackupUI() {
-    const backupActions = document.getElementById('f-backup-actions');
-    if (backupActions) backupActions.style.display = (!isUpdateModeActive && fuseResults.length > 0) ? 'block' : 'none';
+    const btn = document.getElementById('u-btn-backup-current');
+    if (!btn) return;
+    if (!isUpdateModeActive && fuseResults.length > 0) btn.removeAttribute('disabled');
+    else btn.setAttribute('disabled', 'disabled');
   }
 
   function updateBatchButtonsState() {
-    const filterInput = document.getElementById('f-filter-input');
-    const isFiltered = filterInput.value.trim() !== '';
-    const btns = [
-      document.getElementById('f-btn-generate'),
-      document.querySelector('[data-action="copy-all"][data-tab="fuse"]'),
-      document.querySelector('[data-action="export"][data-tab="fuse"]'),
-      document.querySelector('[data-action="export-txt"][data-tab="fuse"]'),
-      document.querySelector('[data-action="print"][data-tab="fuse"]')
-    ];
+    const fuseFiltered = document.getElementById('f-filter-input').value.trim() !== '';
+    const updFiltered = document.getElementById('u-filter-input').value.trim() !== '';
 
-    btns.forEach(btn => {
-      if (btn) {
-        if (isFiltered) {
-          btn.setAttribute('disabled', 'disabled');
-        } else {
-          btn.removeAttribute('disabled');
-        }
-      }
+    const fuseBtns = [
+      document.getElementById('f-btn-generate'),
+      ...document.querySelectorAll('#f-actionButtons .btn-action')
+    ];
+    fuseBtns.forEach(btn => {
+      if (!btn) return;
+      if (fuseFiltered) btn.setAttribute('disabled', 'disabled');
+      else btn.removeAttribute('disabled');
+    });
+
+    document.querySelectorAll('#upd-actionButtons .btn-action').forEach(btn => {
+      if (updFiltered) btn.setAttribute('disabled', 'disabled');
+      else btn.removeAttribute('disabled');
     });
   }
 
@@ -2253,11 +2597,23 @@
   }
 
   function renderResults(type) {
-    const list = document.getElementById(type === 'username' ? 'u-list' : type === 'password' ? 'p-list' : 'f-list');
+    const listId = type === 'username' ? 'u-list' : type === 'password' ? 'p-list' : type === 'update' ? 'update-list' : 'f-list';
+    const list = document.getElementById(listId);
+    if (!list) return;
     list.innerHTML = '';
 
-    if (type === 'fuse') {
-      const q = currentFilterText.trim();
+    let selectedExtraKeysForEdit = null;
+    if (isUpdateModeActive) {
+      const cbs = document.querySelectorAll('.upd-extra-checkbox');
+      if (cbs.length > 0) {
+        selectedExtraKeysForEdit = new Set();
+        cbs.forEach(cb => { if (cb.checked) selectedExtraKeysForEdit.add(cb.value); });
+      }
+    }
+
+    if (type === 'fuse' || type === 'update') {
+      const filterInput = type === 'fuse' ? document.getElementById('f-filter-input') : document.getElementById('u-filter-input');
+      const q = filterInput ? filterInput.value.trim() : '';
       let hasFilter = false;
       let indexTerms = [];
       let textTerms = [];
@@ -2277,16 +2633,21 @@
           const indexMatch = indexTerms.includes(index + 1);
           let textMatch = false;
           if (textTerms.length > 0) {
-            const textToSearch = [
-              res.appName, res.firstName, res.lastName, res.email, res.phone, res.username
-            ].filter(Boolean).join(' ').toLowerCase();
+            const searchParts = [res.appName, res.firstName, res.lastName, res.email, res.phone, res.username];
+            if (res.extra && Array.isArray(res.extra)) {
+              res.extra.forEach(e => {
+                if (e.key) searchParts.push(e.key);
+                if (e.value) searchParts.push(e.value);
+              });
+            }
+            const textToSearch = searchParts.filter(Boolean).join(' ').toLowerCase();
             textMatch = textTerms.some(term => textToSearch.includes(term));
           }
           match = indexMatch || textMatch;
         }
 
-        if (match && isChangedOnly) {
-          const hasChanges = changedFuse.metadata.has(index) || changedFuse.username.has(index) || changedFuse.password.has(index);
+        if (match && isChangedOnly && (type === 'fuse' || type === 'update')) {
+          const hasChanges = changedFuse.metadata.has(index) || changedFuse.username.has(index) || changedFuse.password.has(index) || changedFuse.extra.has(index);
           match = hasChanges;
         }
 
@@ -2327,15 +2688,31 @@
             ${showEditPhone ? `<button type="button" class="icon-btn no-print" data-action="edit-phone" title="Edit Phone" aria-label="Edit Phone">${slidersSvg}</button>` : ''}
           </div>` : '';
 
+        let extraRowsHtml = '';
+        if (res.extra && Array.isArray(res.extra)) {
+          res.extra.forEach((ext, extIdx) => {
+            const extraEditable = isUpdateModeActive && (selectedExtraKeysForEdit === null || selectedExtraKeysForEdit.has(ext.key));
+            extraRowsHtml += `
+              <div class="fuse-row extra-row">
+                <span class="fuse-row-label">${escapeHTML(ext.key)}:</span>
+                <span class="fuse-row-value text-x-${extIdx}"></span>
+                <button type="button" class="icon-btn no-print" data-action="copy-extra" data-ext-index="${extIdx}" title="Copy ${escapeHTML(ext.key)}" aria-label="Copy ${escapeHTML(ext.key)}">${copySvg}</button>
+                ${extraEditable ? `<button type="button" class="icon-btn no-print" data-action="edit-extra" data-ext-index="${extIdx}" title="Edit ${escapeHTML(ext.key)}" aria-label="Edit ${escapeHTML(ext.key)}">${slidersSvg}</button>` : ''}
+              </div>
+            `;
+          });
+        }
+
         const displayName = [res.firstName, res.lastName].filter(Boolean).join(' ');
         const fuseTitle = displayName ? `${escapeHTML(res.appName)} - ${escapeHTML(displayName)}` : escapeHTML(res.appName);
 
         let badgeHtml = '';
-        if (isUpdateModeActive && (changedFuse.metadata.has(originalIndex) || changedFuse.username.has(originalIndex) || changedFuse.password.has(originalIndex))) {
+        if (isUpdateModeActive && (changedFuse.metadata.has(originalIndex) || changedFuse.username.has(originalIndex) || changedFuse.password.has(originalIndex) || changedFuse.extra.has(originalIndex))) {
           const dots = [];
           if (changedFuse.metadata.has(originalIndex)) dots.push('<span class="mac-dot dot-m" title="Metadata changed"></span>');
           if (changedFuse.username.has(originalIndex)) dots.push('<span class="mac-dot dot-u" title="Username changed"></span>');
           if (changedFuse.password.has(originalIndex)) dots.push('<span class="mac-dot dot-p" title="Password changed"></span>');
+          if (changedFuse.extra.has(originalIndex)) dots.push('<span class="mac-dot dot-x" title="Extra changed"></span>');
           badgeHtml = '<span class="fuse-badges">' + dots.join('') + '</span>';
         }
 
@@ -2352,8 +2729,8 @@
             </div>
           </div>`;
 
-        const showRefreshU = res.username && (!isUpdateModeActive || (res.uFormat && !res._lockUser));
-        const showRefreshP = res.password && (!isUpdateModeActive || (res.pFormat && !res._lockPass));
+        const showRefreshU = res.username && (isUpdateModeActive ? (res.uFormat && !res._lockUser) : res.source !== 'existing');
+        const showRefreshP = res.password && (isUpdateModeActive ? (res.pFormat && !res._lockPass) : res.source !== 'existing');
 
         const usernameRow = (res.username || showEditUsername) ? `
           <div class="fuse-row">
@@ -2379,6 +2756,7 @@
           ${phoneRow}
           ${usernameRow}
           ${passwordRow}
+          ${extraRowsHtml}
         `;
 
         if (res.email) {
@@ -2396,6 +2774,31 @@
             const btn = this;
             copyTextToClipboard(card.querySelector('.text-phone').textContent).then(ok => { if (ok) animateToCheckmark(btn); });
           });
+        }
+
+        if (res.extra && Array.isArray(res.extra)) {
+          res.extra.forEach((ext, extIdx) => {
+            const valEl = card.querySelector('.text-x-' + extIdx);
+            if (valEl) valEl.textContent = ext.value;
+          });
+          
+          card.querySelectorAll('[data-action="copy-extra"]').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+              e.preventDefault();
+              const extIdx = parseInt(this.getAttribute('data-ext-index'), 10);
+              copyTextToClipboard(res.extra[extIdx].value).then(ok => { if (ok) animateToCheckmark(this); });
+            });
+          });
+
+          if (isUpdateModeActive) {
+            card.querySelectorAll('[data-action="edit-extra"]').forEach(btn => {
+              btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const extIdx = parseInt(this.getAttribute('data-ext-index'), 10);
+                openEditModal('extra', originalIndex, extIdx);
+              });
+            });
+          }
         }
 
         if (isUpdateModeActive) {
@@ -2455,9 +2858,6 @@
         card.dataset.index = index;
 
         let ratingKey = VALID_RATINGS[res.ratingKey] ? res.ratingKey : (type === 'username' ? 'cool' : 'fair');
-        let ratingLabel = '';
-        if (type === 'username') ratingLabel = ratingKey === 'epic' ? 'Epic' : ratingKey === 'amazing' ? 'Amazing' : 'Cool';
-        else ratingLabel = ratingKey === 'very' ? 'Very Strong' : ratingKey === 'strong' ? 'Strong' : ratingKey === 'fair' ? 'Fair' : 'Weak';
 
         card.innerHTML = `
           <div class="password-text-container">
@@ -2466,7 +2866,6 @@
             <button type="button" class="icon-btn no-print" data-action="copy" title="Copy" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
           </div>
           <div class="strength-bar-container no-print"><div class="strength-bar" data-rating="${ratingKey}"></div></div>
-          <div class="strength-text no-print" data-rating="${ratingKey}">${ratingLabel}</div>
         `;
 
         card.querySelector('.password-text').textContent = res.value;
@@ -2483,13 +2882,17 @@
       });
     }
 
-    const actionsDiv = document.getElementById(type === 'username' ? 'u-actionButtons' : type === 'password' ? 'p-actionButtons' : 'f-actionButtons');
-    actionsDiv.classList.toggle('show', (type === 'fuse' ? fuseResults.length > 0 : (type === 'username' ? usernameResults.length > 0 : passwordResults.length > 0)));
+    const actionsDiv = document.getElementById(type === 'username' ? 'u-actionButtons' : type === 'password' ? 'p-actionButtons' : type === 'fuse' ? 'f-actionButtons' : null);
+    if (actionsDiv && type !== 'update') {
+      actionsDiv.classList.toggle('show', (type === 'fuse' ? fuseResults.length > 0 : (type === 'username' ? usernameResults.length > 0 : passwordResults.length > 0)));
+    }
 
     if (type === 'fuse') {
        updateBatchButtonsState();
        updateFilterVisibility();
        updateBackupUI();
+    } else if (type === 'update') {
+       updateBatchButtonsState();
     }
   }
 
@@ -2579,11 +2982,6 @@
       return;
     }
 
-    currentFilterText = '';
-    isChangedOnly = false;
-    document.getElementById('f-filter-input').value = '';
-    document.getElementById('f-changed-only-btn').classList.remove('primary');
-
     const appNameInput = document.getElementById('f-appName');
     const rawAppName = appNameInput.value.trim();
     if (rawAppName === '') {
@@ -2634,6 +3032,15 @@
       }
     }
 
+    if (fuseResults.length > 0 && source === 'random') {
+      const confirmed = await showConfirm('Generate new credentials? Existing fused credentials on screen will be replaced.');
+      if (!confirmed) return;
+    }
+
+    document.getElementById('f-filter-input').value = '';
+    isChangedOnly = false;
+    document.getElementById('f-changed-only-btn').classList.remove('primary');
+
     const list = document.getElementById('f-list'); list.innerHTML = '';
     fuseResults = [];
     document.getElementById('f-actionButtons').classList.remove('show');
@@ -2648,6 +3055,9 @@
       hasLower: uOptions.lower,
       hasUpper: uOptions.upper,
       hasNum: document.getElementById('u-customNumbers').value.trim().length > 0,
+      customNumbers: document.getElementById('u-customNumbers').value,
+      exclude: document.getElementById('u-exclude').value,
+      minChars: parseInt(document.getElementById('u-minChars').value, 10),
       unique: uOptions.unique,
       excludeAsc: document.getElementById('u-excludeAscenders').checked,
       excludeDesc: document.getElementById('u-excludeDescenders').checked
@@ -2659,6 +3069,7 @@
       hasNum: pOptions.numbers,
       symbols: pOptions.symbols ? SYMBOLS : '',
       excludeSimilar: document.getElementById('p-excludeSimilar').checked,
+      exclude: document.getElementById('p-exclude').value,
       requireEach: document.getElementById('p-requireEach').checked
     };
 
@@ -2672,7 +3083,9 @@
           password: passwordResults[i].value,
           passwordOpt: 'auto',
           uFormat: currentUFormat,
-          pFormat: currentPFormat
+          pFormat: currentPFormat,
+          extra: [],
+          source: 'existing'
         });
       }
       renderResults('fuse');
@@ -2724,7 +3137,9 @@
           password: resP.password,
           passwordOpt: noPassword ? 'none' : 'auto',
           uFormat: currentUFormat,
-          pFormat: currentPFormat
+          pFormat: currentPFormat,
+          extra: [],
+          source: 'random'
         });
       }
       renderResults('fuse');
@@ -2732,45 +3147,47 @@
     refreshIdleProtection();
   }
 
-  function batchUpdate() {
-    if (!isUpdateModeActive || !currentUpdateMode) return;
+  function batchUpdate(forceBoth) {
+    if (!isUpdateModeActive) return;
+    
+    let mode = currentUpdateMode;
+    if (forceBoth) mode = 'both';
+    if (!mode || mode === 'none') return;
 
     const newU = [];
     const newP = [];
-    const uChanged = [];
-    const pChanged = [];
 
     fuseResults.forEach(function (fuseItem, idx) {
-      if (currentUpdateMode === 'password' || currentUpdateMode === 'both') {
+      if (mode === 'password' || mode === 'both') {
         if (fuseItem.pFormat && !fuseItem._lockPass) {
           fuseItem.password = generateWithFormat(fuseItem.pFormat, false);
           newP.push({ value: fuseItem.password, ratingKey: ratingForPassword(fuseItem.pFormat.length, poolSizeFromFormat(fuseItem.pFormat)) });
-          pChanged.push(idx);
         }
       }
-      if (currentUpdateMode === 'username' || currentUpdateMode === 'both') {
+      if (mode === 'username' || mode === 'both') {
         if (fuseItem.uFormat && !fuseItem._lockUser) {
           fuseItem.username = generateWithFormat(fuseItem.uFormat, true);
           newU.push({ value: fuseItem.username, ratingKey: ratingForUsername(fuseItem.uFormat.length, poolSizeFromFormat(fuseItem.uFormat)) });
-          uChanged.push(idx);
         }
       }
     });
 
     if (newU.length === 0 && newP.length === 0) return;
 
-    batchUpdateDone = true;
     changedFuse.username.clear();
     changedFuse.password.clear();
     changedFuse.metadata.clear();
+    changedFuse.extra.clear();
 
     isChangedOnly = false;
     document.getElementById('f-changed-only-btn').classList.remove('primary');
+    document.getElementById('u-changed-only-btn').classList.remove('primary');
 
     rebuildResultsFromFuse();
     renderResults('username');
     renderResults('password');
     renderResults('fuse');
+    renderResults('update');
 
     hasGeneratedUpdate = true;
     refreshIdleProtection();
@@ -2791,6 +3208,9 @@
       hasUpper: /[A-Z]/.test(str),
       hasNum: /[0-9]/.test(str),
       symbols: uniqueSymbols,
+      customNumbers: '',
+      exclude: '',
+      minChars: 0,
       unique: true,
       excludeAsc: false,
       excludeDesc: false,
@@ -2810,6 +3230,9 @@
       hasUpper: defaults.hasUpper,
       hasNum: defaults.hasNum,
       symbols: defaults.symbols,
+      customNumbers: defaults.customNumbers,
+      exclude: defaults.exclude,
+      minChars: defaults.minChars,
       unique: defaults.unique,
       excludeAsc: defaults.excludeAsc,
       excludeDesc: defaults.excludeDesc,
@@ -2826,6 +3249,9 @@
     if (typeof fmt.excludeSimilar === 'boolean') out.excludeSimilar = fmt.excludeSimilar;
     if (typeof fmt.requireEach === 'boolean') out.requireEach = fmt.requireEach;
     if (typeof fmt.symbols === 'string' && fmt.symbols.length <= maxLen) out.symbols = fmt.symbols;
+    if (typeof fmt.customNumbers === 'string' && fmt.customNumbers.length <= maxLen) out.customNumbers = fmt.customNumbers;
+    if (typeof fmt.exclude === 'string' && fmt.exclude.length <= maxLen) out.exclude = fmt.exclude;
+    if (Number.isInteger(fmt.minChars) && fmt.minChars >= 0 && fmt.minChars <= 10) out.minChars = fmt.minChars;
     return out;
   }
 
@@ -2849,7 +3275,7 @@
     }
 
     if (isUsername) {
-      const minChars = 0;
+      const minChars = typeof format.minChars === 'number' ? format.minChars : 0;
       const isUnique = format.unique !== false;
       const r = generateSingleUsername(pools, format.length, minChars, isUnique);
       return r.username;
@@ -2864,18 +3290,20 @@
     try {
       if (!updateState) return;
 
-      captureFormSnapshot();
+      try { captureFormSnapshot(); } catch(e) { console.error("Snapshot failed", e); }
 
       const useMeta = document.getElementById('upd-metadata').checked;
       const useEmail = document.getElementById('upd-email').checked;
       const usePhone = document.getElementById('upd-telephone').checked;
       const useUser = document.getElementById('upd-username').checked;
       const usePass = document.getElementById('upd-password').checked;
+      
+      const selectedExtraKeys = Array.from(document.querySelectorAll('.upd-extra-checkbox:checked')).map(cb => cb.value);
 
       changedFuse.username.clear();
       changedFuse.password.clear();
       changedFuse.metadata.clear();
-      batchUpdateDone = false;
+      changedFuse.extra.clear();
 
       const wasScreenEmpty = fuseResults.length === 0;
       const maxCount = Math.max(fuseResults.length, updateState.fuse.length);
@@ -2896,12 +3324,14 @@
           base._lockPhone = !usePhone;
           base._lockUser = !useUser;
           base._lockPass = !usePass;
+          if (!base.extra) base.extra = [];
           newResults.push(base);
 
           if (!wasScreenEmpty) {
             changedFuse.metadata.add(i);
             if (base.username) changedFuse.username.add(i);
             if (base.password) changedFuse.password.add(i);
+            if (base.extra.length > 0) changedFuse.extra.add(i);
           }
           continue;
         }
@@ -2916,6 +3346,7 @@
         base._lockPhone = !usePhone;
         base._lockUser = !useUser;
         base._lockPass = !usePass;
+        if (!base.extra) base.extra = [];
 
         if (useMeta && (base.appName !== newFuse.appName || base.firstName !== newFuse.firstName || base.lastName !== newFuse.lastName)) {
           base.appName = newFuse.appName;
@@ -2943,11 +3374,27 @@
           if (!base.pFormat && base.password) base.pFormat = analyzeStringFormat(base.password, false);
           changedFuse.password.add(i);
         }
+        
+        if (selectedExtraKeys.length > 0 && newFuse.extra) {
+            newFuse.extra.forEach(newExt => {
+                if (selectedExtraKeys.includes(newExt.key)) {
+                    const existingIdx = base.extra.findIndex(e => e.key === newExt.key);
+                    if (existingIdx > -1) {
+                        base.extra[existingIdx].value = newExt.value;
+                        base.extra[existingIdx].type = newExt.type;
+                    } else {
+                        base.extra.push({ key: newExt.key, value: newExt.value, type: newExt.type });
+                    }
+                    changedFuse.extra.add(i);
+                }
+            });
+        }
 
         newResults.push(base);
       }
 
       fuseResults = newResults;
+      fuseResults.forEach(function (item) { if (item) delete item.source; });
       currentUpdateMode = (useUser && usePass) ? 'both' : useUser ? 'username' : usePass ? 'password' : 'none';
 
       rebuildResultsFromFuse();
@@ -2956,18 +3403,19 @@
 
       document.getElementById('f-filter-input').value = '';
       document.getElementById('f-changed-only-btn').classList.remove('primary');
-      currentFilterText = '';
+      document.getElementById('u-filter-input').value = '';
+      document.getElementById('u-changed-only-btn').classList.remove('primary');
       isChangedOnly = false;
 
       renderResults('username');
       renderResults('password');
       renderResults('fuse');
+      renderResults('update');
 
-      document.getElementById('backupModal').classList.remove('show');
-      document.getElementById('backupModal').setAttribute('aria-hidden', 'true');
-      switchTab('fuse');
+      hasGeneratedUpdate = changedFuse.username.size > 0 || changedFuse.password.size > 0 || changedFuse.metadata.size > 0 || changedFuse.extra.size > 0;
 
-      hasGeneratedUpdate = changedFuse.username.size > 0 || changedFuse.password.size > 0 || changedFuse.metadata.size > 0;
+      updateState = null;
+      clearPendingUpdateState();
 
       refreshIdleProtection();
       saveSettings();
@@ -3001,8 +3449,6 @@
       card.dataset.value = r.username;
       card.querySelector('.password-text').textContent = r.username;
       const bar = card.querySelector('.strength-bar'); bar.dataset.rating = ratingKey;
-      const st = card.querySelector('.strength-text'); st.dataset.rating = ratingKey;
-      st.textContent = ratingKey === 'epic' ? 'Epic' : ratingKey === 'amazing' ? 'Amazing' : 'Cool';
 
       animateToCheckmark(btn);
 
@@ -3029,8 +3475,6 @@
       card.dataset.value = r.password;
       card.querySelector('.password-text').textContent = r.password;
       const bar = card.querySelector('.strength-bar'); bar.dataset.rating = ratingKey;
-      const st = card.querySelector('.strength-text'); st.dataset.rating = ratingKey;
-      st.textContent = ratingKey === 'very' ? 'Very Strong' : ratingKey === 'strong' ? 'Strong' : ratingKey === 'fair' ? 'Fair' : 'Weak';
 
       animateToCheckmark(btn);
     }
@@ -3059,6 +3503,12 @@
         renderResults('username');
         renderResults('password');
 
+        const updFilterEl = document.getElementById('u-filter-input');
+        const updFilter = updFilterEl ? updFilterEl.value.trim() : '';
+        if (updFilter !== '') {
+          renderResults('update');
+        }
+
         const actionsContainer = cardElement.querySelector('.fuse-header-actions');
         if (actionsContainer) {
           actionsContainer.querySelectorAll('.fuse-badges').forEach(b => b.remove());
@@ -3066,6 +3516,7 @@
           if (changedFuse.metadata.has(index)) dots.push('<span class="mac-dot dot-m" title="Metadata changed"></span>');
           if (changedFuse.username.has(index)) dots.push('<span class="mac-dot dot-u" title="Username changed"></span>');
           if (changedFuse.password.has(index)) dots.push('<span class="mac-dot dot-p" title="Password changed"></span>');
+          if (changedFuse.extra.has(index)) dots.push('<span class="mac-dot dot-x" title="Extra changed"></span>');
           if (dots.length) actionsContainer.insertAdjacentHTML('afterbegin', '<span class="fuse-badges">' + dots.join('') + '</span>');
         }
 
@@ -3103,7 +3554,11 @@
         fuseResults[index].password = r.password;
         cardElement.querySelector('.text-p').textContent = r.password;
       }
+      rebuildResultsFromFuse();
+      renderResults('username');
+      renderResults('password');
       animateToCheckmark(btnElement);
+      saveSettings();
     } catch (e) {
       console.error(e);
     }
@@ -3190,10 +3645,21 @@
       const single = fuseResults.length === 1;
       const hasAnyUsername = fuseResults.some(function (r) { return r.username; });
       const hasAnyPassword = fuseResults.some(function (r) { return r.password; });
+      
+      const hasAnyExtra = fuseResults.some(function (r) { return r.extra && r.extra.length > 0; });
+      let extraKeys = new Set();
+      if (hasAnyExtra) {
+          fuseResults.forEach(r => {
+              if (r.extra) r.extra.forEach(e => extraKeys.add(e.key));
+          });
+      }
+      const extraKeysArr = Array.from(extraKeys);
 
       const headerBase = ['Platform Name', 'First Name', 'Last Name', 'Email', 'Telephone'];
       if (hasAnyUsername) headerBase.push('Username');
       if (hasAnyPassword) headerBase.push('Password');
+      extraKeysArr.forEach(k => headerBase.push(k));
+      
       csv = (single ? '' : 'No,') + headerBase.join(',') + '\n';
       txt = '--- HijiForge Fuse ---\n\n';
 
@@ -3208,6 +3674,16 @@
         ];
         if (hasAnyUsername) cells.push('"' + csvEscape(r.username, true) + '"');
         if (hasAnyPassword) cells.push('"' + csvEscape(r.password, true) + '"');
+        
+        extraKeysArr.forEach(k => {
+            let val = '';
+            if (r.extra) {
+                const found = r.extra.find(e => e.key === k);
+                if (found) val = found.value;
+            }
+            cells.push('"' + csvEscape(val, true) + '"');
+        });
+
         const row = cells.join(',') + '\n';
         csv += single ? row : (i + 1) + ',' + row;
 
@@ -3217,6 +3693,11 @@
         if (r.phone) txt += 'Phone    : ' + r.phone + '\n';
         if (r.username) txt += 'Username : ' + r.username + '\n';
         if (r.password) txt += 'Password : ' + r.password + '\n';
+        if (r.extra) {
+            r.extra.forEach(e => {
+                txt += `${e.key.padEnd(8)} : ${e.value}\n`;
+            });
+        }
         txt += '----------------------------------------\n';
       });
     }
@@ -3252,6 +3733,12 @@
     } else {
       fuseResults.forEach((r, i) => {
         const name = [r.firstName, r.lastName].filter(Boolean).map(escapeHTML).join(' ');
+        let extraHtml = '';
+        if (r.extra) {
+            r.extra.forEach(e => {
+                extraHtml += `<div class="print-item-row"><span class="print-label">${escapeHTML(e.key)}</span> : ${escapeHTML(e.value)}</div>`;
+            });
+        }
         printHtml += `<div class="print-item">
           <div class="print-item-title">${single ? escapeHTML(r.appName) : `[${i + 1}] ${escapeHTML(r.appName)}`}</div>
           ${name ? `<div class="print-item-row"><span class="print-label">Name</span> : ${name}</div>` : ''}
@@ -3259,6 +3746,7 @@
           ${r.phone ? `<div class="print-item-row"><span class="print-label">Phone</span> : ${escapeHTML(r.phone)}</div>` : ''}
           ${r.username ? `<div class="print-item-row"><span class="print-label">Username</span> : ${escapeHTML(r.username)}</div>` : ''}
           ${r.password ? `<div class="print-item-row"><span class="print-label">Password</span> : ${escapeHTML(r.password)}</div>` : ''}
+          ${extraHtml}
         </div><hr style="border:0; border-bottom:1px dashed #ccc; margin-bottom:15px; margin-top: 15px;">`;
       });
     }
@@ -3269,46 +3757,22 @@
     window.print();
   }
 
-  function resetBackupModalToInitial() {
-    updateState = null;
-    const fileInput = document.getElementById('update-file');
-    if (fileInput) fileInput.value = '';
-    const fileNameEl = document.getElementById('update-file-name');
-    if (fileNameEl) fileNameEl.textContent = '';
-    const preview = document.getElementById('update-preview');
-    if (preview) preview.style.display = 'none';
-    const btn = document.getElementById('btn-do-update');
-    if (btn) btn.disabled = true;
-    const status = document.getElementById('update-status-msg');
-    if (status) { status.className = 'status-message'; status.textContent = ''; }
-    const list = document.getElementById('update-preview-list');
-    if (list) list.innerHTML = '';
-    updateUpdateModeAvailability();
-  }
-
-  function openBackupModal() {
-    resetBackupModalToInitial();
-    lastFocusedElement = document.activeElement || document.body;
-    document.getElementById('backupModal').classList.add('show');
-    document.getElementById('backupModal').setAttribute('aria-hidden', 'false');
-    setTimeout(() => {
-      const c = document.getElementById('btn-backup-close');
-      if (c) c.focus();
-    }, 50);
-  }
-
-  async function doBackup() {
-    if (!fuseResults || fuseResults.length === 0) {
+  async function doBackup(dataToExport) {
+    const data = dataToExport || fuseResults;
+    if (!data || data.length === 0) {
       setStatus('fuse', 'Error: Nothing to download.', 'error');
       return false;
     }
 
+    const pwd = await showPasswordPrompt('Set Backup Password');
+    if (pwd === null) return false;
+
     try {
-      const data = {
+      const payloadData = {
         format: 'hijiforge-backup',
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
-        fuse: fuseResults.map(item => {
+        fuse: data.map(item => {
           const uFmt = item.uFormat || analyzeStringFormat(item.username || '', true);
           const pFmt = item.pFormat || analyzeStringFormat(item.password || '', false);
           return {
@@ -3320,16 +3784,19 @@
             username: item.username || '',
             password: item.password || '',
             uFormat: uFmt,
-            pFormat: pFmt
+            pFormat: pFmt,
+            extra: (item.extra || []).map(function(e) { return { key: e.key, value: e.value, type: e.type || 'Text' }; })
           };
         })
       };
 
-      const encryptedPayload = await encryptData(JSON.stringify(data));
+      const encryptedPayload = await encryptData(JSON.stringify(payloadData), pwd);
 
       const payload = {
         format: 'hijiforge-backup',
-        version: 1,
+        version: 2,
+        protected: true,
+        iterations: CURRENT_ITERATIONS,
         salt: encryptedPayload.salt,
         iv: encryptedPayload.iv,
         data: encryptedPayload.data
@@ -3366,6 +3833,7 @@
       preview.style.display = 'none';
       btn.disabled = true;
       fileNameEl.textContent = '';
+      clearPendingUpdateState();
       return;
     }
 
@@ -3396,10 +3864,21 @@
       }
 
       let decryptedText;
-      try {
-        decryptedText = await decryptData(data);
-      } catch (err) {
-        return showUpdateError('Backup file is corrupted or not from HijiForge.');
+      if (data.protected) {
+         const pwd = await showPasswordPrompt('Enter Backup Password', {
+             verifyAsync: async (pw) => { decryptedText = await decryptData(data, pw); }
+         });
+         if (pwd === null) {
+             fileNameEl.textContent = '';
+             return;
+         }
+      } else {
+         console.warn('Loading legacy unprotected backup file. Consider re-exporting with password protection.');
+         try {
+             decryptedText = await decryptData(data, LEGACY_BACKUP_PASSPHRASE);
+         } catch (err) {
+             return showUpdateError('Backup file is corrupted or not from HijiForge.');
+         }
       }
 
       try {
@@ -3427,11 +3906,24 @@
 
           out.uFormat = normalizeImportedFormat(item.uFormat, out.username, true);
           out.pFormat = normalizeImportedFormat(item.pFormat, out.password, false);
+          
+          out.extra = [];
+          if (Array.isArray(item.extra)) {
+             item.extra.forEach(e => {
+                 if (e && typeof e.key === 'string' && typeof e.value === 'string') {
+                     out.extra.push({ 
+                         key: e.key.substring(0, 2048), 
+                         value: e.value.substring(0, 2048),
+                         type: (e.type === 'Number' || e.type === 'Text') ? e.type : 'Text'
+                     });
+                 }
+             });
+          }
 
           sanitized.push(out);
         }
 
-        updateState = { format: 'hijiforge-backup', version: 1, exportedAt: decData.exportedAt, fuse: sanitized };
+        updateState = { format: 'hijiforge-backup', version: 2, exportedAt: decData.exportedAt, fuse: sanitized };
 
         const status = document.getElementById('update-status-msg');
         status.className = 'status-message success';
@@ -3446,9 +3938,17 @@
           return `<div>${i + 1}. ${escapeHTML(item.appName)}${name ? ' — ' + escapeHTML(name) : ''}</div>`;
         }).join('');
 
+        const extraKeys = new Set();
+        sanitized.forEach(item => {
+            if (item.extra) item.extra.forEach(e => extraKeys.add(e.key));
+        });
+        
+        createExtraCheckboxes(extraKeys, null);
+
         preview.style.display = 'block';
         btn.disabled = false;
         updateUpdateModeAvailability();
+        savePendingUpdateState();
 
       } catch (err) {
         console.error(err);
@@ -3466,8 +3966,10 @@
     status.style.display = 'block';
     status.textContent = msg;
     document.getElementById('update-preview-list').innerHTML = '';
+    document.getElementById('dynamic-extra-checkboxes').innerHTML = '';
     document.getElementById('btn-do-update').disabled = true;
     updateUpdateModeAvailability();
+    clearPendingUpdateState();
   }
 
   function getFocusable(container) {
@@ -3500,7 +4002,6 @@
     });
     [
       ['btn-about', 'Privacy & data'],
-      ['btn-backup', 'Update fused credentials from a saved backup'],
       ['btn-reset', 'Wipe saved data and results']
     ].forEach(idLabel => {
       const el = document.getElementById(idLabel[0]);
@@ -3519,8 +4020,92 @@
       else setTheme('dark');
     });
 
+    const togglePwdBtn = document.getElementById('togglePasswordVisibility');
+    if (togglePwdBtn) {
+      togglePwdBtn.addEventListener('click', function() {
+        const input = document.getElementById('passwordInput');
+        const icon = document.getElementById('eye-icon');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        } else {
+          input.type = 'password';
+          icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+      });
+    }
+
+    document.getElementById('passwordModal').addEventListener('keydown', function (e) {
+      trapFocus(this, e);
+    });
+
+    document.getElementById('btn-password-cancel').addEventListener('click', () => {
+      const modal = document.getElementById('passwordModal');
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      if (lastFocusedElement && lastFocusedElement !== document.body) {
+        try { lastFocusedElement.focus(); } catch (e) {}
+      }
+      if (passwordPromptResolve) passwordPromptResolve(null);
+      passwordPromptResolve = null;
+      passwordPromptOpts = null;
+    });
+
+    document.getElementById('btn-password-ok').addEventListener('click', async () => {
+      const modal = document.getElementById('passwordModal');
+      const input = document.getElementById('passwordInput');
+      const btnOk = document.getElementById('btn-password-ok');
+      const btnCancel = document.getElementById('btn-password-cancel');
+      const pwd = input.value;
+
+      if (pwd.length < 6 || pwd.length > 50) {
+        input.classList.add('invalid');
+        input.focus();
+        return;
+      }
+
+      if (passwordPromptOpts && typeof passwordPromptOpts.verifyAsync === 'function') {
+        btnOk.disabled = true;
+        btnCancel.disabled = true;
+        input.disabled = true;
+        try {
+          await passwordPromptOpts.verifyAsync(pwd);
+        } catch (err) {
+          input.classList.add('invalid');
+          btnOk.disabled = false;
+          btnCancel.disabled = false;
+          input.disabled = false;
+          input.select();
+          return;
+        }
+        btnOk.disabled = false;
+        btnCancel.disabled = false;
+        input.disabled = false;
+      }
+
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      if (lastFocusedElement && lastFocusedElement !== document.body) {
+        try { lastFocusedElement.focus(); } catch (e) {}
+      }
+      if (passwordPromptResolve) passwordPromptResolve(pwd);
+      passwordPromptResolve = null;
+      passwordPromptOpts = null;
+    });
+
+    document.getElementById('passwordInput').addEventListener('input', function () {
+      this.classList.remove('invalid');
+    });
+    
+    document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('btn-password-ok').click();
+        }
+    });
+
     window.addEventListener('beforeprint', function () {
-      const html = buildPrintContent(activeTab);
+      const html = buildPrintContent(activeTab === 'extra' || activeTab === 'update' ? 'fuse' : activeTab);
       document.getElementById('print-section').innerHTML = html ||
         '<h1>HijiForge</h1><p style="color:#555;font-size:14px;">No results to print on this tab yet. Please generate results first.</p>';
       if (!html) return;
@@ -3528,7 +4113,7 @@
       const now = new Date();
       const ts = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
       let printTitle = 'HijiForge';
-      if (activeTab === 'fuse' && fuseResults.length > 0) {
+      if (activeTab === 'fuse') {
         printTitle = `HijiForge_Fuse_${ts}`;
       } else if (activeTab === 'username') {
         printTitle = `HijiForge_Users_${ts}`;
@@ -3545,6 +4130,7 @@
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', function () {
+        if (this.disabled) return;
         switchTab(btn.dataset.tab);
         saveSettings();
       });
@@ -3557,6 +4143,13 @@
       });
     });
 
+    document.querySelectorAll('#update-mode-control .seg-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        setUpdateSubMode(this.dataset.updMode);
+        saveSettings();
+      });
+    });
+
     document.getElementById('f-no-password').addEventListener('change', saveSettings);
 
     ['upd-metadata', 'upd-email', 'upd-telephone', 'upd-username', 'upd-password'].forEach(function (id) {
@@ -3565,14 +4158,12 @@
     });
 
     document.getElementById('f-filter-input').addEventListener('input', function () {
-      currentFilterText = this.value;
       renderResults('fuse');
       saveSettingsDebounced();
     });
 
     document.getElementById('f-clear-filter').addEventListener('click', function() {
       document.getElementById('f-filter-input').value = '';
-      currentFilterText = '';
       isChangedOnly = false;
       document.getElementById('f-changed-only-btn').classList.remove('primary');
       renderResults('fuse');
@@ -3583,6 +4174,26 @@
       isChangedOnly = !isChangedOnly;
       this.classList.toggle('primary', isChangedOnly);
       renderResults('fuse');
+      saveSettings();
+    });
+
+    document.getElementById('u-filter-input').addEventListener('input', function () {
+      renderResults('update');
+      saveSettingsDebounced();
+    });
+
+    document.getElementById('u-clear-filter').addEventListener('click', function() {
+      document.getElementById('u-filter-input').value = '';
+      isChangedOnly = false;
+      document.getElementById('u-changed-only-btn').classList.remove('primary');
+      renderResults('update');
+      saveSettings();
+    });
+
+    document.getElementById('u-changed-only-btn').addEventListener('click', function() {
+      isChangedOnly = !isChangedOnly;
+      this.classList.toggle('primary', isChangedOnly);
+      renderResults('update');
       saveSettings();
     });
 
@@ -3652,19 +4263,6 @@
       trapFocus(this, e);
     });
 
-    document.getElementById('btn-backup').addEventListener('click', openBackupModal);
-    document.getElementById('btn-backup-close').addEventListener('click', () => {
-      document.getElementById('backupModal').classList.remove('show');
-      document.getElementById('backupModal').setAttribute('aria-hidden', 'true');
-      if (lastFocusedElement && lastFocusedElement !== document.body) { try { lastFocusedElement.focus(); } catch (e) {} }
-    });
-    document.getElementById('backupModal').addEventListener('click', (e) => {
-      if (e.target === e.currentTarget) document.getElementById('btn-backup-close').click();
-    });
-    document.getElementById('backupModal').addEventListener('keydown', function (e) {
-      trapFocus(this, e);
-    });
-
     document.getElementById('edit-tab-platform').addEventListener('click', function() { switchEditTab('platform'); });
     document.getElementById('edit-tab-name').addEventListener('click', function() { switchEditTab('name'); });
 
@@ -3708,13 +4306,28 @@
       this.value = sanitizeName(this.value);
     });
 
-    document.getElementById('f-btn-backup-primary').addEventListener('click', function () {
+    document.getElementById('edit-extra-label-input').addEventListener('input', function () {
+      if (this.value.length > 0) {
+        this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+      }
+    });
+
+    document.getElementById('edit-extra-value-input').addEventListener('input', function () {
+      if (currentEditType === 'extra' && currentEditIndex > -1 && currentEditExtraIndex > -1) {
+        const fuseItem = fuseResults[currentEditIndex];
+        if (fuseItem && fuseItem.extra && fuseItem.extra[currentEditExtraIndex]) {
+          if (fuseItem.extra[currentEditExtraIndex].type === 'Number') {
+            this.value = this.value.replace(/[^0-9]/g, '');
+          }
+        }
+      }
+    });
+
+    document.getElementById('u-btn-backup-current').addEventListener('click', function () {
+      if (fuseResults.length === 0) return;
       doBackup();
     });
 
-    document.getElementById('update-file-trigger').addEventListener('click', function () {
-      document.getElementById('update-file').click();
-    });
     document.getElementById('update-file').addEventListener('change', function () {
       handleUpdateFile(this.files[0]);
     });
@@ -3722,7 +4335,10 @@
     document.getElementById('btn-do-update').addEventListener('click', doUpdate);
 
     document.getElementById('f-btn-update-file').addEventListener('click', async function() {
-      if (!hasGeneratedUpdate) return;
+      if (!hasGeneratedUpdate) {
+          setStatus('fuse', 'No changes generated yet.', 'warning');
+          return;
+      }
 
       const success = await doBackup();
       if (!success) {
@@ -3745,7 +4361,6 @@
       usernameResults = [];
       passwordResults = [];
       fuseResults = [];
-      currentFilterText = '';
       isChangedOnly = false;
 
       document.getElementById('u-list').innerHTML = '';
@@ -3754,11 +4369,25 @@
       document.getElementById('u-actionButtons').classList.remove('show');
       document.getElementById('p-actionButtons').classList.remove('show');
       document.getElementById('f-actionButtons').classList.remove('show');
+      document.getElementById('upd-actionButtons').classList.remove('show');
 
       restoreFormSnapshot();
       unlockUI();
       refreshIdleProtection();
       saveSettings();
+    });
+
+    document.getElementById('u-btn-generate-batch').addEventListener('click', async function() {
+        const hasRegeneratable = fuseResults.some(item => 
+            (item.uFormat && !item._lockUser) || (item.pFormat && !item._lockPass)
+        );
+        if (!hasRegeneratable) {
+            setStatus('fuse', 'No fields are available for regeneration. Select Username or Password during Load.', 'warning');
+            return;
+        }
+        const confirmed = await showConfirm('Generate new credentials? Existing fused credentials on screen will be replaced.');
+        if (!confirmed) return;
+        batchUpdate(true);
     });
 
     const btnClear = document.getElementById('btn-clear-clipboard');
@@ -3866,6 +4495,7 @@
               if (r.phone) lines.push('Phone: ' + r.phone);
               if (r.username) lines.push('Username: ' + r.username);
               if (r.password) lines.push('Password: ' + r.password);
+              if (r.extra) r.extra.forEach(e => lines.push(e.key + ': ' + e.value));
               return lines.join('\n');
             });
           }
@@ -3888,16 +4518,195 @@
       });
     });
 
+    document.querySelectorAll('#extra-type-group .btn-toggle').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('#extra-type-group .btn-toggle').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-pressed', 'true');
+        extraTypeActive = this.dataset.type;
+        const valInput = document.getElementById('extra-value');
+        if (extraTypeActive === 'Number') {
+          valInput.setAttribute('inputmode', 'numeric');
+          valInput.value = valInput.value.replace(/[^0-9]/g, '');
+        } else {
+          valInput.setAttribute('inputmode', 'text');
+        }
+        saveSettings();
+      });
+    });
+
+    document.getElementById('extra-value').addEventListener('input', function() {
+        if (extraTypeActive === 'Number') {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        }
+        saveSettingsDebounced();
+    });
+
+    document.getElementById('extra-target').addEventListener('input', function() {
+        const val = parseInt(this.value, 10);
+        if (!isNaN(val)) {
+            if (val > 50) this.value = 50;
+            if (val < 1) this.value = 1;
+        }
+        saveSettingsDebounced();
+    });
+
+    document.getElementById('extra-label').addEventListener('input', function() {
+        if (this.value.length > 0) {
+            this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+        }
+        saveSettingsDebounced();
+    });
+
+    document.getElementById('btn-apply-extra').addEventListener('click', function() {
+        const targetInput = document.getElementById('extra-target').value;
+        if (targetInput === '') return;
+        
+        const idx = parseInt(targetInput, 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= fuseResults.length) {
+            setStatus('fuse', 'Error: Invalid target number.', 'error');
+            return;
+        }
+
+        const key = document.getElementById('extra-label').value.trim();
+        const value = document.getElementById('extra-value').value.trim();
+        
+        if (!key || !value) {
+            setStatus('fuse', 'Error: Label and Value cannot be empty.', 'error');
+            return;
+        }
+
+        if (!fuseResults[idx].extra) fuseResults[idx].extra = [];
+        
+        const existingIdx = fuseResults[idx].extra.findIndex(e => e.key === key);
+        if (existingIdx > -1) {
+            fuseResults[idx].extra[existingIdx].value = value;
+            fuseResults[idx].extra[existingIdx].type = extraTypeActive;
+        } else {
+            fuseResults[idx].extra.push({ key: key, value: value, type: extraTypeActive });
+        }
+        
+        if (isUpdateModeActive) {
+            changedFuse.extra.add(idx);
+            hasGeneratedUpdate = true;
+            renderResults('update');
+        }
+
+        renderResults('fuse');
+        saveSettings();
+        
+        document.getElementById('extra-label').value = '';
+        document.getElementById('extra-value').value = '';
+    });
+
+    document.getElementById('btn-backup-selected').addEventListener('click', function() {
+        const targetInput = document.getElementById('extra-target').value;
+        if (targetInput === '') return;
+        
+        const idx = parseInt(targetInput, 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= fuseResults.length) {
+            setStatus('fuse', 'Error: Invalid target number.', 'error');
+            return;
+        }
+
+        const key = document.getElementById('extra-label').value.trim();
+        const value = document.getElementById('extra-value').value.trim();
+
+        if (key && value) {
+            if (!fuseResults[idx].extra) fuseResults[idx].extra = [];
+            const existingIdx = fuseResults[idx].extra.findIndex(e => e.key === key);
+            if (existingIdx > -1) {
+                fuseResults[idx].extra[existingIdx].value = value;
+                fuseResults[idx].extra[existingIdx].type = extraTypeActive;
+            } else {
+                fuseResults[idx].extra.push({ key: key, value: value, type: extraTypeActive });
+            }
+
+            if (isUpdateModeActive) {
+                changedFuse.extra.add(idx);
+                hasGeneratedUpdate = true;
+                renderResults('update');
+            }
+
+            renderResults('fuse');
+            saveSettings();
+
+            document.getElementById('extra-label').value = '';
+            document.getElementById('extra-value').value = '';
+        }
+        
+        const dataToBackup = [fuseResults[idx]];
+        doBackup(dataToBackup);
+    });
+
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         if (document.getElementById('aboutModal').classList.contains('show')) {
           document.getElementById('btn-modal-close').click();
         }
-        if (document.getElementById('backupModal').classList.contains('show')) {
-          document.getElementById('btn-backup-close').click();
+        if (document.getElementById('passwordModal').classList.contains('show')) {
+          document.getElementById('btn-password-cancel').click();
         }
       }
     });
+
+    const stickyWrapper = document.querySelector('.sticky-top-wrapper');
+
+    function updateHeaderHeightVar() {
+      const h = document.querySelector('.header');
+      const w = document.querySelector('.sticky-top-wrapper');
+      if (h && w) w.style.setProperty('--header-height', h.offsetHeight + 'px');
+    }
+    updateHeaderHeightVar();
+    window.addEventListener('resize', updateHeaderHeightVar);
+
+    let headerScrollTicking = false;
+    let lastScrollYPos = window.scrollY || 0;
+    let scrollAccumulator = 0;
+
+    function updateHeaderVisibility() {
+      if (!stickyWrapper) return;
+      const y = window.scrollY;
+      if (document.querySelector('.modal-overlay.show') || y <= 60) {
+        if (stickyWrapper.classList.contains('header-hidden')) {
+          stickyWrapper.classList.remove('header-hidden');
+        }
+        lastScrollYPos = y;
+        scrollAccumulator = 0;
+        return;
+      }
+      const delta = y - lastScrollYPos;
+      if ((delta > 0 && scrollAccumulator < 0) || (delta < 0 && scrollAccumulator > 0)) {
+        scrollAccumulator = 0;
+      }
+      scrollAccumulator += delta;
+      if (scrollAccumulator > 15 && !stickyWrapper.classList.contains('header-hidden')) {
+        stickyWrapper.classList.add('header-hidden');
+        scrollAccumulator = 0;
+      } else if (scrollAccumulator < -15 && stickyWrapper.classList.contains('header-hidden')) {
+        stickyWrapper.classList.remove('header-hidden');
+        scrollAccumulator = 0;
+      }
+      lastScrollYPos = y;
+    }
+
+    window.addEventListener('scroll', function () {
+      if (headerScrollTicking) return;
+      headerScrollTicking = true;
+      requestAnimationFrame(function () {
+        updateHeaderVisibility();
+        headerScrollTicking = false;
+      });
+    }, { passive: true });
+
+    if (stickyWrapper) {
+      stickyWrapper.addEventListener('focusin', function () {
+        stickyWrapper.classList.remove('header-hidden');
+      });
+    }
   }
 
   function boot() {
@@ -3907,6 +4716,7 @@
       loadSettings,
       applyAccessibleLabels,
       function () { switchTab(activeTab); },
+      function () { if (!isUpdateModeActive) restorePendingUpdate(); },
       checkIdleFlagOnBoot,
       refreshIdleProtection,
       updateBackupUI
@@ -3918,6 +4728,7 @@
         if (window.__hijiforgeBoot) window.__hijiforgeBoot.errors.push(String(e && e.message || e));
       }
     });
+    document.documentElement.removeAttribute('data-hf-update-mode');
     if (window.__hijiforgeBoot && !failed) window.__hijiforgeBoot.ready = true;
   }
 
